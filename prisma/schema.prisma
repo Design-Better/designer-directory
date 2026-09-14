@@ -210,6 +210,9 @@ model Job {
   // opposed to a senior IC. Kept separate from `role` because leadership is
   // orthogonal to discipline — you can lead product design or brand.
   leadership        Boolean   @default(false)
+  // Set when the job is copied into the newsletter digest, so next week's
+  // "suggest 5" never re-offers it.
+  digestedAt        DateTime?
 
   @@index([active, createdAt])
   @@index([active, leadership])
