@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Job } from "@prisma/client";
@@ -84,6 +85,23 @@ function balance(jobs: Job[], featuredFirst: boolean): Array<{ job: Job; rank: n
     return b.job.createdAt.getTime() - a.job.createdAt.getTime();
   });
   return ranked;
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
+  const { company } = await searchParams;
+  if (company) {
+    return {
+      title: `${company} design jobs`,
+      description: `Open design roles at ${company}, pulled daily from their careers site. Product, UX, brand, design systems and leadership roles on Design Better Careers.`,
+      alternates: { canonical: `/jobs?company=${encodeURIComponent(company)}` },
+    };
+  }
+  // Every other filter, sort and page variant canonicalises to the index.
+  return {
+    title: "Design jobs",
+    description: "Hundreds of open design roles, pulled daily from company career pages: product design, UX, brand, design systems, research, motion and design leadership.",
+    alternates: { canonical: "/jobs" },
+  };
 }
 
 export default async function JobsPage({

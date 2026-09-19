@@ -23,9 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       `The career hub for ${subscriberLabel} design and tech professionals. Browse senior design talent or post your open role to reach the best designers.`,
     metadataBase: new URL(APP_URL.startsWith("http") ? APP_URL : `https://${APP_URL}`),
-    alternates: {
-      canonical: APP_URL,
-    },
+    // No canonical here: it would be inherited by every page that does not
+    // override it, which once told Google that /jobs, every job page and
+    // /talent were duplicates of the home page. Each page sets its own.
     openGraph: {
       title: "Design Better Careers",
       description:

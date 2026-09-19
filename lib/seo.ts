@@ -119,6 +119,9 @@ export function locationFromSlug(slug: string): string | undefined {
   return Object.entries(SEO_LOCATIONS).find(([, v]) => v.slug === slug)?.[0];
 }
 
+/** Below this many matching profiles a /hire/[role]/[location] page is noindex and out of the sitemap. */
+export const HIRE_LOCATION_MIN_PROFILES = 3;
+
 export function locationWhereClause(locationKey: string) {
   const terms = [locationKey, ...(LOCATION_ALIASES[locationKey] ?? [])];
   return {

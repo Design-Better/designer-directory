@@ -25,10 +25,10 @@ export async function generateMetadata({
   const seo = ROLE_SEO[roleKey];
 
   return {
-    title: `Hire a ${seo.singular} | Design Better Careers`,
+    title: `Hire a ${seo.singular}`,
     description: seo.hireCopy,
     openGraph: {
-      title: `Hire a ${seo.singular} | Design Better Careers`,
+      title: `Hire a ${seo.singular}`,
       description: seo.hireCopy,
     },
     alternates: {

@@ -9,6 +9,7 @@ import { CompanyLogo } from "@/components/CompanyLogo";
 import { formatDate } from "@/lib/utils";
 import { withTracking } from "@/lib/apply-url";
 import { logAlertEvent } from "@/lib/alert-events";
+import { jobPostingLd } from "@/lib/job-posting-ld";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -25,8 +26,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   // block, so every job unfurled as the same generic site card. The image comes
   // from opengraph-image.tsx in this folder and is injected automatically.
   return {
-    title: `${title} | Design Better Careers`,
+    title, // the root layout template appends " | Design Better Careers"
     description,
+    alternates: { canonical: `/jobs/${job.id}` },
+    // A closed role stays reachable for people holding a link, but must not
+    // be indexed: Google penalises JobPosting markup on filled roles, and the
+    // markup is only rendered while the job is active.
+    ...(job.active ? {} : { robots: { index: false, follow: true } }),
     openGraph: {
       title,
       description,
@@ -75,7 +81,12 @@ export default async function JobDetailPage({
   const manageUrl = `/api/jobs/close?token=${job.manageToken}`;
   const isExpired = job.expiresAt ? job.expiresAt < new Date() : false;
 
+  const ld = job.active ? jobPostingLd(job, `${process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers"}/jobs/${job.id}`) : null;
   return (
+    <>
+      {ld && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
+      )}
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
 
       {/* Owner management bar */}
@@ -322,5 +333,6 @@ export default async function JobDetailPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

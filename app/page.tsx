@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { HeroCollage } from "@/components/HeroCollage";
 import { DesignerCard } from "@/components/DesignerCard";
 import { JobTable } from "@/components/JobTable";
@@ -12,6 +13,8 @@ import { getCorpusStats, formatSubscribers, formatSubscribersShort } from "@/lib
 import type { Designer } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 async function getStats() {
   const [designerCount, jobCount] = await Promise.all([

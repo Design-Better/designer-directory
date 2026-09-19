@@ -1,4 +1,11 @@
 import { db } from "@/lib/db";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Design talent directory",
+  description: "Senior product, UX, brand and design-systems designers open to their next role. Browse the Design Better talent directory or post a job to get matched candidates.",
+  alternates: { canonical: "/talent" },
+};
 import { getDirectoryCount } from "@/lib/directory";
 import Link from "next/link";
 import { Suspense } from "react";

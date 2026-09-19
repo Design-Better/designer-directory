@@ -24,7 +24,7 @@ export async function generateMetadata({
   if (!roleKey) return {};
   const seo = ROLE_SEO[roleKey];
 
-  const title = `${seo.singular} Jobs | Design Better Careers`;
+  const title = `${seo.singular} Jobs`;
   const description = seo.jobsCopy;
 
   return {

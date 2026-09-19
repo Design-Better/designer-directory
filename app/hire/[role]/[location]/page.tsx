@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DesignerCard } from "@/components/DesignerCard";
 import { Button } from "@/components/ui/Button";
 import { ArrowRight, MapPin, Users } from "lucide-react";
-import { ROLE_SEO, SEO_LOCATIONS, roleFromSlug, locationFromSlug, locationWhereClause } from "@/lib/seo";
+import { ROLE_SEO, SEO_LOCATIONS, roleFromSlug, locationFromSlug, locationWhereClause, HIRE_LOCATION_MIN_PROFILES } from "@/lib/seo";
 import { JOB_POSTING_PRICE_DOLLARS } from "@/lib/stripe";
 
 export const revalidate = 3600;
@@ -34,8 +34,15 @@ export async function generateMetadata({
   const loc = SEO_LOCATIONS[locationKey];
   const locationStr = loc.preposition ? `${loc.preposition} ${loc.label}` : loc.label;
 
-  const title = `Hire a ${seo.singular} ${locationStr} | Design Better Careers`;
+  const title = `Hire a ${seo.singular} ${locationStr}`;
   const description = `Find experienced ${seo.plural.toLowerCase()} ${locationStr}. Browse available designers and post a job to get matched candidates delivered to your inbox.`;
+
+  // A location page with fewer than three matching profiles is a template
+  // with no content. It stays reachable and linked, but is not offered to
+  // search engines (app/sitemap.ts applies the same threshold).
+  const matching = await db.designer.count({
+    where: { publicProfile: true, hidden: false, openToWork: { not: "NOT_LOOKING" }, primaryRole: roleKey, ...locationWhereClause(locationKey) },
+  });
 
   return {
     title,
@@ -44,6 +51,7 @@ export async function generateMetadata({
     alternates: {
       canonical: `${process.env.NEXT_PUBLIC_APP_URL}/hire/${roleSlug}/${locationSlug}`,
     },
+    ...(matching < HIRE_LOCATION_MIN_PROFILES ? { robots: { index: false, follow: true } } : {}),
   };
 }
 

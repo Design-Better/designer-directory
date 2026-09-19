@@ -87,7 +87,9 @@ export default async function DesignerProfilePage({ params }: { params: Promise<
 
   if (!designer || !designer.publicProfile || designer.hidden) notFound();
 
-  void db.designer.update({ where: { id }, data: { profileViews: { increment: 1 } } });
+  // Awaited: a fire-and-forget update was dropped when the function froze after
+  // responding, which is why every profile showed zero views.
+  await db.designer.update({ where: { id }, data: { profileViews: { increment: 1 } } }).catch(() => {});
 
   const status = WORK_STATUS_LABELS[designer.openToWork];
   const name = `${designer.firstName} ${designer.lastName}`;
