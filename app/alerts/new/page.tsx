@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-/** Where a non-member goes to become one. Confirm the URL with Aarron. */
+/** Where a non-member goes to become one. Confirmed by Aarron 2026-09-21. */
 const SUBSCRIBE_URL = "https://designbetterpodcast.com/subscribe?utm_source=designbetter.careers&utm_medium=alerts";
 
 const LABEL = "font-mono text-[11px] font-medium uppercase tracking-[0.12em]";

@@ -68,8 +68,7 @@ subscriber by hand from our admin endpoint if the roster can't see them.
 
 ## To confirm with Aarron
 
-- The subscribe URL for non-members. We link to
-  `https://designbetterpodcast.com/subscribe` with UTMs; change it if the
-  paid landing page is elsewhere.
+- Subscribe URL for non-members is confirmed: `https://designbetterpodcast.com/subscribe`
+  (with UTMs). Use the same one if you link to it.
 - Whether to show saved-search counts in the Friday funnel report (we log
   `custom_request` and `custom_saved` events already).
