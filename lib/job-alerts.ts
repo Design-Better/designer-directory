@@ -6,7 +6,9 @@ import {
   type DesignerForMatching,
   type JobForMatching,
 } from "@/lib/matching";
-import type { AlertFrequency, Designer, Job } from "@prisma/client";
+import type { AlertFrequency, Designer, Job, JobAlert } from "@prisma/client";
+import { parseCriteria, matchesCriteria, describeCriteria, criteriaToQuery, type Criteria } from "@/lib/job-criteria";
+import { activeMemberHashes, hashEmail } from "@/lib/membership";
 
 /**
  * Designer job alerts.
@@ -33,6 +35,7 @@ const DAY = 864e5;
 
 const CADENCE_DAYS: Record<AlertFrequency, number | null> = {
   NONE: null,
+  DAILY: 1,
   WEEKLY: 7,
   BIWEEKLY: 14,
   MONTHLY: 28,
@@ -40,6 +43,7 @@ const CADENCE_DAYS: Record<AlertFrequency, number | null> = {
 
 export const CADENCE_LABEL: Record<AlertFrequency, string> = {
   NONE: "Not sending",
+  DAILY: "Every weekday",
   WEEKLY: "Weekly",
   BIWEEKLY: "Every two weeks",
   MONTHLY: "Monthly",
@@ -368,6 +372,147 @@ export async function sendAlertsInvite(opts: {
         headers: { "List-Unsubscribe": `<${appUrl()}/alerts?token=${d.editToken}&stop=1>` },
       });
       await db.designer.update({ where: { id: d.id }, data: { alertInviteSentAt: new Date() } });
+      result.sent++;
+    } catch (e) {
+      result.errors.push(`${d.email}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Custom saved-search alerts (paid tier). See docs/custom-alerts-contract.md.
+// ---------------------------------------------------------------------------
+
+/** A designer is entitled when any of their addresses is on the member roster. */
+export function designerIsMember(d: Pick<Designer, "email" | "memberEmail">, roster: Set<string>): boolean {
+  return [d.email, d.memberEmail].some((e) => e && roster.has(hashEmail(e)));
+}
+
+export function isAlertDue(a: Pick<JobAlert, "frequency" | "lastSentAt" | "pausedAt">, now = new Date()): boolean {
+  if (a.pausedAt) return false;
+  const days = CADENCE_DAYS[a.frequency];
+  if (!days) return false;
+  if (!a.lastSentAt) return true;
+  return now.getTime() - a.lastSentAt.getTime() >= (days - 0.5) * DAY;
+}
+
+function customAlertEmail(
+  d: AlertDesigner,
+  sends: Array<{ alert: JobAlert; criteria: Criteria; matches: AlertMatch[] }>,
+): { subject: string; html: string } {
+  const base = appUrl();
+  const total = sends.reduce((n, s) => n + s.matches.length, 0);
+  const subject = sends.length === 1
+    ? `${total} new role${total === 1 ? "" : "s"}: ${sends[0].alert.name}`
+    : `${total} new roles across ${sends.length} of your saved searches`;
+  const sections = sends.map(({ alert, criteria, matches }) => `
+    <h2 style="font-size:16px;margin:26px 0 4px;">${esc(alert.name)}<span style="color:${ORANGE};">.</span></h2>
+    <p style="color:${MUTED};font-size:12px;margin:0 0 6px;">${esc(describeCriteria(criteria))} · <a href="${base}/jobs?${criteriaToQuery(criteria)}&utm_source=custom_alert&utm_medium=email&d=${d.id}" style="color:${MUTED};">see all on the board</a></p>
+    <table role="presentation" style="width:100%;border-collapse:collapse;">${matches.map((m) => roleRow(m, base, d.id, "custom_alert")).join("")}</table>`).join("");
+  const html = shell(`
+    <h1 style="font-size:26px;line-height:1.15;margin:0 0 12px;">New roles for you<span style="color:${ORANGE};">.</span></h1>
+    <p style="font-size:16px;line-height:1.5;margin:0;">Hi ${esc(d.firstName)}, here is what matched your saved search${sends.length === 1 ? "" : "es"} since the last email.</p>
+    ${sections}
+    <p style="color:${MUTED};font-size:12px;line-height:1.7;margin-top:28px;border-top:1px solid #E5E1D8;padding-top:16px;">
+      <a href="${base}/alerts?token=${d.editToken}" style="color:${MUTED};">Edit your saved searches or cadence</a> ·
+      <a href="${base}/alerts?token=${d.editToken}&stop=1" style="color:${MUTED};">Stop these emails</a>
+    </p>
+  `);
+  return { subject, html };
+}
+
+export interface SendCustomAlertsResult {
+  alerts: number;
+  due: number;
+  pausedNotMember: number;
+  unpaused: number;
+  sent: number;
+  skippedThin: number;
+  errors: string[];
+  samples: Array<{ designer: string; alert: string; matches: number }>;
+}
+
+/**
+ * Custom alerts: hard-filter by criteria, then the same scorer, dedupe and
+ * floor as profile alerts. Membership is re-checked every run: a lapsed member
+ * has their custom alerts paused (never deleted); a returning member's are
+ * unpaused and resume on the next due date. One email per designer per run,
+ * however many of their searches fired.
+ */
+export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number } = {}): Promise<SendCustomAlertsResult> {
+  const now = new Date();
+  const dryRun = Boolean(opts.dryRun);
+  const result: SendCustomAlertsResult = { alerts: 0, due: 0, pausedNotMember: 0, unpaused: 0, sent: 0, skippedThin: 0, errors: [], samples: [] };
+
+  const alerts = await db.jobAlert.findMany({
+    where: { OR: [{ pausedAt: null }, { pausedReason: "not_member" }] },
+    include: { designer: { select: { ...ALERT_DESIGNER_SELECT, memberEmail: true } } },
+    orderBy: { lastSentAt: { sort: "asc", nulls: "first" } },
+  });
+  result.alerts = alerts.length;
+  if (!alerts.length) return result;
+
+  // Membership gate, one roster fetch for the whole run.
+  const roster = await activeMemberHashes();
+  const byDesigner = new Map<string, typeof alerts>();
+  for (const a of alerts) {
+    const member = designerIsMember(a.designer, roster);
+    if (!member && !a.pausedAt) {
+      result.pausedNotMember++;
+      if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: now, pausedReason: "not_member" } });
+      continue;
+    }
+    if (member && a.pausedAt && a.pausedReason === "not_member") {
+      result.unpaused++;
+      if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: null, pausedReason: null } });
+      a.pausedAt = null;
+    }
+    if (!member || a.designer.openToWork === "NOT_LOOKING" || !isAlertDue(a, now)) continue;
+    const list = byDesigner.get(a.designerId) ?? [];
+    list.push(a);
+    byDesigner.set(a.designerId, list);
+  }
+  const designers = [...byDesigner.entries()].slice(0, opts.limit ?? byDesigner.size);
+  result.due = designers.reduce((n, [, l]) => n + l.length, 0);
+  if (!designers.length) return result;
+
+  const oldest = new Date(now.getTime() - 28 * DAY);
+  const pool = await db.job.findMany({ where: { active: true, createdAt: { gte: oldest } } });
+  const resend = dryRun ? null : getResend();
+  const from = getFrom();
+
+  for (const [designerId, list] of designers) {
+    const d = list[0].designer;
+    const sentBefore = new Set(
+      (await db.jobAlertLog.findMany({ where: { designerId }, select: { jobId: true } })).map((l) => l.jobId),
+    );
+    const sends: Array<{ alert: JobAlert; criteria: Criteria; matches: AlertMatch[] }> = [];
+    const usedJobIds = new Set<string>();
+    for (const a of list) {
+      const criteria = parseCriteria(a.criteria as Record<string, unknown>);
+      const since = a.lastSentAt ?? new Date(now.getTime() - FIRST_LOOKBACK_DAYS * DAY);
+      const candidates = pool.filter((j) => j.createdAt >= since && !sentBefore.has(j.id) && !usedJobIds.has(j.id) && matchesCriteria(j, criteria));
+      const matches = pickMatches(toDesignerForMatching(d), candidates);
+      result.samples.length < 5 && result.samples.push({ designer: d.firstName, alert: a.name, matches: matches.length });
+      if (matches.length < MIN_MATCHES) { result.skippedThin++; continue; }
+      for (const m of matches) usedJobIds.add(m.job.id);
+      sends.push({ alert: a, criteria, matches });
+    }
+    if (!sends.length) continue;
+    if (dryRun) { result.sent++; continue; }
+
+    const { subject, html } = customAlertEmail(d, sends);
+    try {
+      await resend!.emails.send({
+        from, to: d.email, subject, html,
+        headers: { "List-Unsubscribe": `<${appUrl()}/alerts?token=${d.editToken}&stop=1>` },
+      });
+      await db.jobAlertLog.createMany({
+        data: sends.flatMap((s) => s.matches.map((m) => ({ designerId, jobId: m.job.id }))),
+        skipDuplicates: true,
+      });
+      await db.jobAlert.updateMany({ where: { id: { in: sends.map((s) => s.alert.id) } }, data: { lastSentAt: now } });
       result.sent++;
     } catch (e) {
       result.errors.push(`${d.email}: ${e instanceof Error ? e.message : String(e)}`);

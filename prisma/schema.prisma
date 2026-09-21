@@ -71,6 +71,13 @@ model Designer {
   alertInviteSentAt DateTime?  // the one-off "still looking?" campaign
   wantsLeadership   Boolean    @default(false)
   jobAlertLogs      JobAlertLog[]
+  // Custom saved-search alerts (paid tier). memberEmail is a second address
+  // for the membership match when the board email differs from the one they
+  // subscribe with; status is re-checked before every send.
+  jobAlerts         JobAlert[]
+  memberEmail       String?
+  memberStatus      String?    // active | past_due | none
+  memberCheckedAt   DateTime?
 
   @@index([publicProfile, hidden, openToWork])
   @@index([alertFrequency])
@@ -79,6 +86,7 @@ model Designer {
 
 enum AlertFrequency {
   NONE
+  DAILY
   WEEKLY
   BIWEEKLY
   MONTHLY
@@ -99,6 +107,27 @@ model AlertEvent {
   @@index([kind, createdAt])
   @@index([designerId])
   @@map("alert_events")
+}
+
+/// A saved search a designer asked to be emailed. Criteria use the same
+/// parameter names as /api/v1/jobs. Paused rather than deleted when the
+/// membership lapses, so a resubscribe brings it back.
+model JobAlert {
+  id           String         @id @default(cuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  designerId   String
+  name         String
+  criteria     Json
+  frequency    AlertFrequency @default(WEEKLY)
+  lastSentAt   DateTime?
+  pausedAt     DateTime?
+  pausedReason String?        // not_member | user | thin
+  designer     Designer       @relation(fields: [designerId], references: [id], onDelete: Cascade)
+
+  @@index([designerId])
+  @@index([frequency, pausedAt])
+  @@map("job_alerts")
 }
 
 model JobAlertLog {

@@ -63,6 +63,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     if (designer.alertFrequency !== "NONE") {
       await db.designer.update({ where: { id: designer.id }, data: { alertFrequency: "NONE" } });
     }
+    await db.jobAlert.updateMany({ where: { designerId: designer.id, pausedAt: null }, data: { pausedAt: new Date(), pausedReason: "user" } });
     logAlertEvent({ kind: "stop", designerId: designer.id });
     return (
       <Shell>

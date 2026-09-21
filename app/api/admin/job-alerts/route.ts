@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendJobAlerts, sendAlertsInvite } from "@/lib/job-alerts";
+import { sendJobAlerts, sendAlertsInvite, sendCustomAlerts } from "@/lib/job-alerts";
 import { buildAlertReport, sendAlertReport } from "@/lib/alert-report";
 
 export const maxDuration = 300;
@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
 
   if (body.mode === "alerts") {
     return NextResponse.json({ ok: true, mode: "alerts", dryRun, build, ...(await sendJobAlerts({ dryRun, limit: body.limit })) });
+  }
+  if (body.mode === "custom") {
+    return NextResponse.json({ ok: true, mode: "custom", dryRun, build, ...(await sendCustomAlerts({ dryRun, limit: body.limit })) });
   }
   if (body.mode === "invite") {
     return NextResponse.json({
