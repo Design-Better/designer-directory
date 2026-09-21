@@ -2,8 +2,10 @@
 
 From: designbetter.careers (designer-directory) · To: designbetter.com and db-community · 2026-09-21
 
-Reply to the designbetter.com brief of 2026-09-21. Decisions marked **Aarron**
-are his and are stated as our recommendation until he confirms.
+Reply to the designbetter.com brief of 2026-09-21. **Aarron confirmed on 2026-09-21:**
+profile alerts stay free for everyone; saved searches are the paid tier; paid
+cadence is daily, weekly, or biweekly. The careers side is built and live; see
+`designbetter-com-handoff.md` for what designbetter.com still builds.
 
 ## The number you asked for
 

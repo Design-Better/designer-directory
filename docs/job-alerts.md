@@ -88,3 +88,32 @@ Returns `invited`, `optedIn` by cadence, `nowNotLooking`, `confirmedWithoutAlert
 `invite_click`, `prefs_saved`, `stop`, `job_view`, `apply_click` (events, distinct
 designers, distinct jobs), plus `prefsBreakdown` by status/cadence. The owner
 preview row is excluded.
+
+## Custom saved-search alerts (paid tier, built 2026-09-21)
+
+Profile-based alerts above stay free for everyone. Paying Design Better
+subscribers can also save up to five searches with explicit criteria.
+
+| Piece | Where |
+| --- | --- |
+| Entry page | `/alerts/new?<criteria>` (criteria = `/api/v1/jobs` params); `?token=` once signed in |
+| Sign-in link, unlock, save, pause, delete | `app/alerts/new/actions.ts` |
+| Criteria parse/filter/describe | `lib/job-criteria.ts` (hard filters before `scoreDesigner`) |
+| Membership | `lib/membership.ts`: db-community roster (hashed, hourly) when `MEMBERS_API_URL`/`MEMBERS_KEY` are set; otherwise the status recorded at unlock, trusted 30 days |
+| Sender | `sendCustomAlerts` in `lib/job-alerts.ts`; cron `/api/cron/custom-alerts` weekdays 08:00 UTC |
+| Admin | `POST /api/admin/job-alerts` modes `custom` (`dryRun`), `grant` (`grantEmail`, `revoke`) |
+| Management | saved searches listed on `/alerts?token=` with pause/resume/delete |
+| Board button | "Email me these jobs" on `/jobs` once a filter is active |
+
+Rules carried over: three-match floor, one role per employer, dedupe per
+designer across all searches (`JobAlertLog`), one email per designer per
+run, stop link pauses everything. A lapsed member's searches pause with
+`pausedReason: not_member` and resume on the next run after they return.
+
+Until db-community ships `/api/members/active-hashes` and
+`/api/members/check` (see `custom-alerts-contract.md`), the roster is
+unavailable and entitlement comes from the recorded status. `mode: "grant"`
+records it by hand for a subscriber the roster cannot see.
+
+Verified end to end 2026-09-21 on the preview row: sign-in form, unlock,
+mismatch state, save, dry run, one real send, pause metadata.
