@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 
-export type AlertEventKind = "invite_click" | "prefs_saved" | "stop" | "job_view" | "apply_click";
+export type AlertEventKind = "invite_click" | "prefs_saved" | "stop" | "job_view" | "apply_click" | "custom_request" | "custom_saved";
 
 /**
  * Fire-and-forget funnel logging for designer emails. Never throws and never

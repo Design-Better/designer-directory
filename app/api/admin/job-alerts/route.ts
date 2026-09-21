@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendJobAlerts, sendAlertsInvite, sendCustomAlerts } from "@/lib/job-alerts";
 import { buildAlertReport, sendAlertReport } from "@/lib/alert-report";
+import { db } from "@/lib/db";
 
 export const maxDuration = 300;
 
@@ -20,13 +21,23 @@ export async function POST(req: NextRequest) {
   }
   const body = await req.json().catch(() => ({})) as {
     mode?: string; dryRun?: boolean; limit?: number; offset?: number;
-    cohort?: "all" | "visible" | "hidden"; emails?: string[]; email?: boolean; to?: string;
+    cohort?: "all" | "visible" | "hidden"; emails?: string[]; email?: boolean; to?: string; grantEmail?: string; revoke?: boolean;
   };
   const dryRun = Boolean(body.dryRun);
   const build = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local";
 
   if (body.mode === "alerts") {
     return NextResponse.json({ ok: true, mode: "alerts", dryRun, build, ...(await sendJobAlerts({ dryRun, limit: body.limit })) });
+  }
+  // Support tool: record a designer as a member (or not) by hand. Used to test
+  // the paid flow before db-community's roster exists, and for the rare person
+  // whose subscription the roster cannot see. Trusted for 30 days.
+  if (body.mode === "grant" && body.grantEmail) {
+    const r = await db.designer.updateMany({
+      where: { email: body.grantEmail.trim().toLowerCase() },
+      data: body.revoke ? { memberStatus: "none", memberCheckedAt: new Date() } : { memberStatus: "active", memberCheckedAt: new Date() },
+    });
+    return NextResponse.json({ ok: true, mode: "grant", build, updated: r.count, revoked: Boolean(body.revoke) });
   }
   if (body.mode === "custom") {
     return NextResponse.json({ ok: true, mode: "custom", dryRun, build, ...(await sendCustomAlerts({ dryRun, limit: body.limit })) });

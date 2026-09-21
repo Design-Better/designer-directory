@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { AlertsForm } from "./AlertsForm";
 import { pickMatches, toDesignerForMatching, CADENCE_LABEL, MIN_MATCHES } from "@/lib/job-alerts";
 import { logAlertEvent } from "@/lib/alert-events";
+import { describeCriteria, parseCriteria } from "@/lib/job-criteria";
+import { setAlertPaused, deleteJobAlert } from "./new/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ interface SearchParams {
   saved?: string;
   status?: string;
   error?: string;
+  limit?: string;
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -114,8 +117,52 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   // Reaching this page with a valid token means an email link was clicked.
   logAlertEvent({ kind: "invite_click", designerId: designer.id });
 
+  const savedSearches = await db.jobAlert.findMany({ where: { designerId: designer.id }, orderBy: { createdAt: "asc" } });
+  const justSaved = params.saved && params.saved !== "1" ? params.saved : null;
+
   return (
     <Shell>
+      {(savedSearches.length > 0 || justSaved) && (
+        <section className="mb-12 pb-10" style={{ borderBottom: "1px solid var(--divider)" }}>
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>Saved searches · Design Better subscriber benefit</p>
+          {justSaved && (
+            <p className="text-[16px] leading-relaxed mt-3" style={{ color: "var(--text-1)" }}>
+              Saved. The first email goes out on the next weekday morning that three or more new roles match.
+            </p>
+          )}
+          <ul className="mt-4 flex flex-col gap-2">
+            {savedSearches.map((a) => {
+              const c = parseCriteria(a.criteria as Record<string, unknown>);
+              const paused = Boolean(a.pausedAt);
+              return (
+                <li key={a.id} className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3" style={{ border: "1px solid var(--input-border)", background: "var(--surface-1)" }}>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>{a.name}</p>
+                    <p className="text-[14px] mt-0.5" style={{ color: "var(--text-3)" }}>
+                      {describeCriteria(c)} · {CADENCE_LABEL[a.frequency]}
+                      {paused ? ` · paused${a.pausedReason === "not_member" ? " (subscription not found)" : ""}` : a.lastSentAt ? ` · last sent ${a.lastSentAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : " · nothing sent yet"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <form action={setAlertPaused}>
+                      <input type="hidden" name="token" value={token} /><input type="hidden" name="id" value={a.id} /><input type="hidden" name="paused" value={paused ? "0" : "1"} />
+                      <button type="submit" className={CTA} style={{ border: "1px solid var(--input-border)", color: "var(--text-1)" }}>{paused ? "Resume" : "Pause"}</button>
+                    </form>
+                    <form action={deleteJobAlert}>
+                      <input type="hidden" name="token" value={token} /><input type="hidden" name="id" value={a.id} />
+                      <button type="submit" className={CTA} style={{ color: "var(--text-3)" }}>Delete</button>
+                    </form>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-4 text-[14px]" style={{ color: "var(--text-3)" }}>
+            <Link href={`/alerts/new?token=${token}`} className="underline" style={{ color: "var(--text-1)" }}>Add another saved search</Link>
+            {params.limit === "1" ? " · you\u2019re at the limit of five; delete one first." : ""}
+          </p>
+        </section>
+      )}
       <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>Design Better Careers</p>
       <h1 className="font-display text-display-md font-bold leading-none mt-3" style={{ color: "var(--text-1)" }}>
         Hi {designer.firstName}<span style={{ color: "#FF4725" }}>.</span>

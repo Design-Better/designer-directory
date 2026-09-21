@@ -8,7 +8,7 @@ import {
 } from "@/lib/matching";
 import type { AlertFrequency, Designer, Job, JobAlert } from "@prisma/client";
 import { parseCriteria, matchesCriteria, describeCriteria, criteriaToQuery, type Criteria } from "@/lib/job-criteria";
-import { activeMemberHashes, hashEmail } from "@/lib/membership";
+import { memberRoster, isMember } from "@/lib/membership";
 
 /**
  * Designer job alerts.
@@ -384,11 +384,6 @@ export async function sendAlertsInvite(opts: {
 // Custom saved-search alerts (paid tier). See docs/custom-alerts-contract.md.
 // ---------------------------------------------------------------------------
 
-/** A designer is entitled when any of their addresses is on the member roster. */
-export function designerIsMember(d: Pick<Designer, "email" | "memberEmail">, roster: Set<string>): boolean {
-  return [d.email, d.memberEmail].some((e) => e && roster.has(hashEmail(e)));
-}
-
 export function isAlertDue(a: Pick<JobAlert, "frequency" | "lastSentAt" | "pausedAt">, now = new Date()): boolean {
   if (a.pausedAt) return false;
   const days = CADENCE_DAYS[a.frequency];
@@ -447,17 +442,17 @@ export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number 
 
   const alerts = await db.jobAlert.findMany({
     where: { OR: [{ pausedAt: null }, { pausedReason: "not_member" }] },
-    include: { designer: { select: { ...ALERT_DESIGNER_SELECT, memberEmail: true } } },
+    include: { designer: { select: { ...ALERT_DESIGNER_SELECT, memberEmail: true, memberStatus: true, memberCheckedAt: true } } },
     orderBy: { lastSentAt: { sort: "asc", nulls: "first" } },
   });
   result.alerts = alerts.length;
   if (!alerts.length) return result;
 
   // Membership gate, one roster fetch for the whole run.
-  const roster = await activeMemberHashes();
+  const roster = await memberRoster();
   const byDesigner = new Map<string, typeof alerts>();
   for (const a of alerts) {
-    const member = designerIsMember(a.designer, roster);
+    const member = isMember(a.designer, roster, now);
     if (!member && !a.pausedAt) {
       result.pausedNotMember++;
       if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: now, pausedReason: "not_member" } });
