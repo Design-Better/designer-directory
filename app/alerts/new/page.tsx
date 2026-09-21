@@ -1,10 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
-import { parseCriteria, describeCriteria, criteriaToQuery } from "@/lib/job-criteria";
+import { parseCriteria, describeCriteria, criteriaToQuery, MAX_SAVED_SEARCHES } from "@/lib/job-criteria";
 import { checkMember, isMember, memberRoster } from "@/lib/membership";
 import { NewAlertForm } from "./NewAlertForm";
-import { requestAlertLink, addMemberEmail, MAX_SAVED_SEARCHES } from "./actions";
+import { requestAlertLink, addMemberEmail } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {

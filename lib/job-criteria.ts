@@ -10,6 +10,9 @@ import { parseSalary } from "@/lib/job-posting-ld";
  * designer-side alert can never disagree about the same job.
  */
 
+/** Saved searches per designer on the paid tier. */
+export const MAX_SAVED_SEARCHES = 5;
+
 export interface Criteria {
   q?: string;
   role?: string[];

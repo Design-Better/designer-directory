@@ -4,12 +4,11 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { checkMember, normalizeEmail } from "@/lib/membership";
-import { parseCriteria, describeCriteria, criteriaToQuery, isEmptyCriteria } from "@/lib/job-criteria";
+import { parseCriteria, describeCriteria, criteriaToQuery, isEmptyCriteria, MAX_SAVED_SEARCHES } from "@/lib/job-criteria";
 import { logAlertEvent } from "@/lib/alert-events";
 import { PRIMARY_ROLES, EXPERIENCE_LEVELS } from "@/lib/utils";
 import type { AlertFrequency } from "@prisma/client";
 
-export const MAX_SAVED_SEARCHES = 5;
 const PAID_FREQUENCIES: AlertFrequency[] = ["DAILY", "WEEKLY", "BIWEEKLY"];
 
 function appUrl(): string {
