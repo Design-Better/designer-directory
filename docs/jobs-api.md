@@ -30,7 +30,29 @@ GET https://designbetter.careers/api/v1/jobs/{id}     one job with full descript
 | `offset` | integer | use `nextOffset` from the response |
 | `include` | `description` | adds the full text to each job (larger payload) |
 
-Unknown `role`, `level`, or `type` values return `400` with the allowed lists.
+**Multi-value:** every list parameter accepts a comma list (`role=A,B`) or repeated
+keys (`role=A&role=B`); both are supported on purpose and safe to build on.
+
+**Facet keys vs query keys.** The response's facet names are field names; the
+query uses shorter filter names. Map them like this:
+
+| Facet in response | Query parameter |
+| --- | --- |
+| `role` | `role` |
+| `experienceLevel` | `level` |
+| `typeOfRole` | `type` |
+| `company` | `company` |
+| `remote` | `remote` |
+| `leadership` | `leadership` |
+| `hasSalary` | `salary` |
+
+**Errors.** Unknown `role`, `level`, or `type` values return `400` with the allowed
+lists. An unknown query parameter (`typeOfRole=Contract`, a typo) also returns
+`400` naming the key and the mapping above, rather than silently returning the
+whole board. `utm_*` and similar tracking keys are ignored.
+
+`facets.company` lists **every** employer in the filtered set, most roles first
+(185 entries on the whole board, a few KB); `companiesTotal` is its length.
 URL-encode values with spaces and slashes (`role=Product%20Design`, `role=UX%2FUI%20Design`).
 
 ## Response
@@ -50,7 +72,7 @@ URL-encode values with spaces and slashes (`role=Product%20Design`, `role=UX%2FU
     "remote": { "true": 118 },
     "leadership": { "false": 96, "true": 22 },
     "hasSalary": { "true": 70, "false": 48 },
-    "company": { "Adobe": 12, ... },   // top 25
+    "company": { "Adobe": 12, ... },   // every employer in the filtered set
     "companiesTotal": 64
   },
   "jobs": [

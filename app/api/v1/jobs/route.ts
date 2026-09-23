@@ -29,10 +29,22 @@ const CORS = {
 const SORTS = ["newest", "oldest", "balanced"] as const;
 type Sort = (typeof SORTS)[number];
 
-function list(v: string | null): string[] | undefined {
-  const out = v?.split(",").map((s) => s.trim()).filter(Boolean);
-  return out?.length ? out : undefined;
+/** `role=A,B` and `role=A&role=B` are equivalent; both are supported on purpose. */
+function list(values: string[]): string[] | undefined {
+  const out = values.flatMap((v) => v.split(",")).map((s) => s.trim()).filter(Boolean);
+  return out.length ? [...new Set(out)] : undefined;
 }
+
+/** Query keys this endpoint understands. Anything else is a 400, because a
+ *  misspelt filter that silently matches the whole board looks like it works. */
+const QUERY_KEYS = ["q", "role", "level", "type", "company", "location", "remote", "leadership", "salary", "since", "sort", "limit", "offset", "include"] as const;
+/** Facet keys in the response → the query key that filters on them. */
+const FACET_TO_QUERY: Record<string, string> = {
+  role: "role", experienceLevel: "level", typeOfRole: "type", company: "company",
+  remote: "remote", leadership: "leadership", hasSalary: "salary",
+};
+/** Tracking and framework noise we tolerate without complaint. */
+const IGNORED_KEY = /^(utm_|_|fbclid$|gclid$|ref$)/;
 function bool(v: string | null): boolean | undefined {
   if (v === null || v === "") return undefined;
   if (v === "true" || v === "1") return true;
@@ -68,12 +80,26 @@ export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers";
 
+  const unknown = [...new Set([...p.keys()])].filter((k) => !(QUERY_KEYS as readonly string[]).includes(k) && !IGNORED_KEY.test(k));
+  if (unknown.length) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Unknown query parameter",
+        unknown,
+        allowed: QUERY_KEYS,
+        hint: "Facet keys differ from query keys: " + Object.entries(FACET_TO_QUERY).filter(([f, q]) => f !== q).map(([f, q]) => `${f} → ${q}`).join(", "),
+      },
+      { status: 400, headers: CORS },
+    );
+  }
+
   const filters = {
     q: p.get("q")?.trim() || undefined,
-    role: list(p.get("role")),
-    level: list(p.get("level")),
-    type: list(p.get("type")),
-    company: list(p.get("company")),
+    role: list(p.getAll("role")),
+    level: list(p.getAll("level")),
+    type: list(p.getAll("type")),
+    company: list(p.getAll("company")),
     location: p.get("location")?.trim() || undefined,
     remote: bool(p.get("remote")),
     leadership: bool(p.get("leadership")),
@@ -82,7 +108,7 @@ export async function GET(req: NextRequest) {
     sort: (SORTS as readonly string[]).includes(p.get("sort") ?? "") ? (p.get("sort") as Sort) : "newest",
     limit: Math.min(MAX_LIMIT, Math.max(1, parseInt(p.get("limit") ?? "", 10) || DEFAULT_LIMIT)),
     offset: Math.max(0, parseInt(p.get("offset") ?? "", 10) || 0),
-    include: new Set(list(p.get("include")) ?? []),
+    include: new Set(list(p.getAll("include")) ?? []),
   };
 
   const bad = {
@@ -173,7 +199,7 @@ export async function GET(req: NextRequest) {
     remote: count(rows, "remote"),
     leadership: count(rows, "leadership"),
     hasSalary: { true: rows.filter((r) => r.compensation).length, false: rows.filter((r) => !r.compensation).length },
-    company: Object.fromEntries(Object.entries(companies).slice(0, 25)),
+    company: companies, // every employer in the filtered set, most roles first
     companiesTotal: Object.keys(companies).length,
   };
 
