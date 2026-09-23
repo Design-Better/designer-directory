@@ -991,6 +991,15 @@ export const SOURCES: Source[] = [
   { ats: "greenhouse", slug: "ethoslife",      name: "Ethos",         domain: "ethoslife.com",    url: "https://ethoslife.com" },
   { ats: "greenhouse", slug: "newrelic",       name: "New Relic",     domain: "newrelic.com",     url: "https://newrelic.com" },
   { ats: "greenhouse", slug: "monzo",          name: "Monzo",         domain: "monzo.com",        url: "https://monzo.com" },
+  // Added 2026-09-23 after probing new design-forward candidates for live
+  // design roles (scripts/probe-job-boards.mjs), cross-checked against the
+  // full isDesignRole()/isLeadershipRole() above rather than the script's
+  // reduced copy.
+  { ats: "greenhouse", slug: "mavenclinic",    name: "Maven Clinic",  domain: "mavenclinic.com", url: "https://mavenclinic.com" },
+  { ats: "greenhouse", slug: "hightouch",      name: "Hightouch",     domain: "hightouch.com",   url: "https://hightouch.com" },
+  { ats: "greenhouse", slug: "gleanwork",      name: "Glean",         domain: "glean.com",       url: "https://glean.com" },
+  { ats: "greenhouse", slug: "current",        name: "Current",       domain: "current.com",     url: "https://current.com" },
+  { ats: "greenhouse", slug: "step",           name: "Step",          domain: "step.com",        url: "https://step.com" },
   { ats: "lever", slug: "netflix",       name: "Netflix",      domain: "netflix.com",      url: "https://netflix.com" },
   { ats: "lever", slug: "squareup",      name: "Square",       domain: "squareup.com",     url: "https://squareup.com" },
   { ats: "lever", slug: "shopify",       name: "Shopify",      domain: "shopify.com",      url: "https://shopify.com" },
@@ -1052,6 +1061,22 @@ export const SOURCES: Source[] = [
   { ats: "ashby", slug: "harvey",        name: "Harvey",       domain: "harvey.ai",        url: "https://harvey.ai" },
   { ats: "ashby", slug: "abridge",       name: "Abridge",      domain: "abridge.com",      url: "https://abridge.com" },
   { ats: "ashby", slug: "givebutter",    name: "Givebutter",   domain: "givebutter.com",   url: "https://givebutter.com" },
+  // Added 2026-09-23 — see comment above the Greenhouse additions in this same wave.
+  { ats: "ashby", slug: "sierra",        name: "Sierra",       domain: "sierra.ai",        url: "https://sierra.ai" },
+  { ats: "ashby", slug: "baseten",       name: "Baseten",      domain: "baseten.co",       url: "https://baseten.co" },
+  { ats: "ashby", slug: "decagon",       name: "Decagon",      domain: "decagon.ai",       url: "https://decagon.ai" },
+  { ats: "ashby", slug: "workos",        name: "WorkOS",       domain: "workos.com",       url: "https://workos.com" },
+  { ats: "ashby", slug: "zapier",        name: "Zapier",       domain: "zapier.com",       url: "https://zapier.com" },
+  { ats: "ashby", slug: "lovable",       name: "Lovable",      domain: "lovable.dev",      url: "https://lovable.dev" },
+  { ats: "ashby", slug: "rho",           name: "Rho",          domain: "rho.co",           url: "https://rho.co" },
+  { ats: "ashby", slug: "n8n",           name: "n8n",          domain: "n8n.io",           url: "https://n8n.io" },
+  { ats: "ashby", slug: "secureframe",   name: "Secureframe",  domain: "secureframe.com",  url: "https://secureframe.com" },
+  { ats: "ashby", slug: "bumbleinc",     name: "Bumble",       domain: "bumble.com",       url: "https://bumble.com" },
+  { ats: "ashby", slug: "fal-ai",        name: "fal",          domain: "fal.ai",           url: "https://fal.ai" },
+  { ats: "ashby", slug: "resend",        name: "Resend",       domain: "resend.com",       url: "https://resend.com" },
+  { ats: "ashby", slug: "watershed",     name: "Watershed",    domain: "watershed.com",    url: "https://watershed.com" },
+  { ats: "ashby", slug: "highbeam",      name: "Highbeam",     domain: "highbeam.com",     url: "https://highbeam.com" },
+  { ats: "ashby", slug: "speak",         name: "Speak",        domain: "speak.com",        url: "https://speak.com" },
 ];
 
 // ── Candidate shape ──────────────────────────────────────────────────────
