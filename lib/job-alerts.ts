@@ -190,7 +190,7 @@ export function alertEmail(d: AlertDesigner, matches: AlertMatch[]): { subject: 
   const subject = `${n} design role${n === 1 ? "" : "s"} that match your profile`;
   const html = shell(`
     <h1 style="font-size:26px;line-height:1.15;margin:0 0 12px;">New roles for you<span style="color:${ORANGE};">.</span></h1>
-    <p style="font-size:16px;line-height:1.5;margin:0 0 20px;">Hi ${esc(d.firstName)}, ${n} role${n === 1 ? "" : "s"} posted since your last email match what you told us: ${esc(d.primaryRole)}, ${esc(d.experienceLevel.replace(/\s*\(.*\)/, "").toLowerCase())}, ${esc(d.location)}${d.wantsLeadership ? ", leadership" : ""}.</p>
+    <p style="font-size:16px;line-height:1.5;margin:0 0 20px;">Hi ${esc(d.firstName)}, we have ${n} new role${n === 1 ? "" : "s"} for you: ${esc(d.primaryRole)}, ${esc(d.experienceLevel.replace(/\s*\(.*\)/, "").toLowerCase())}, ${esc(d.location)}${d.wantsLeadership ? ", leadership" : ""}.</p>
     <table role="presentation" style="width:100%;border-collapse:collapse;">${matches.map((m) => roleRow(m, base, d.id, "job_alert")).join("")}</table>
     <p style="margin:24px 0 0;">${button(`${base}/jobs?utm_source=job_alert&utm_medium=email&d=${d.id}`, "See every open role")}</p>
     ${footerLinks(d.editToken, base)}
@@ -392,7 +392,7 @@ export function isAlertDue(a: Pick<JobAlert, "frequency" | "lastSentAt" | "pause
   return now.getTime() - a.lastSentAt.getTime() >= (days - 0.5) * DAY;
 }
 
-function customAlertEmail(
+export function customAlertEmail(
   d: AlertDesigner,
   sends: Array<{ alert: JobAlert; criteria: Criteria; matches: AlertMatch[] }>,
 ): { subject: string; html: string } {
@@ -514,4 +514,61 @@ export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number 
     }
   }
   return result;
+}
+
+/** Email 3: the sign-in link for starting a saved search. Copy approved by Aarron 2026-09-25. */
+export function signInEmail(firstName: string, label: string, link: string): { subject: string; html: string } {
+  const name = firstName === "there" ? "there" : firstName;
+  return {
+    subject: "Your sign-in link for job alerts",
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0A0A0A;">
+        <p style="font-size:16px;line-height:1.5;">Hi ${esc(name)}, click below to set up your alert${label ? ` for <strong>${esc(label)}</strong>` : ""}.</p>
+        <p><a href="${link}" style="display:inline-block;background:#0A0A0A;color:#F5F2EC;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">Set up my alert</a></p>
+        <p style="color:#6B6862;font-size:13px;line-height:1.5;">If you didn't ask for this, ignore it; nothing is created until the link is clicked. The link is personal to this address.</p>
+        <p style="color:#6B6862;font-size:13px;">— Design Better Careers</p>
+      </div>`,
+  };
+}
+
+/** Addresses a preview may go to. Previews render with real roles but never reach a designer. */
+const PREVIEW_RECIPIENTS = ["aarron@aarronwalter.com", "aarronwalter@gmail.com", "aarron@thecuriositydepartment.com"];
+
+/**
+ * Sends one test of each subscriber email (weekly alert, saved-search alert,
+ * sign-in link) to an owner address, rendered from the owner's hidden preview
+ * row and this fortnight's roles. For approving copy; never touches the logs.
+ */
+export async function sendEmailPreviews(to = "aarron@aarronwalter.com"): Promise<{ to: string; sent: string[]; skipped: string[] }> {
+  if (!PREVIEW_RECIPIENTS.includes(to.trim().toLowerCase())) throw new Error("preview recipient must be an owner address");
+  const d = await db.designer.findUnique({ where: { email: "aarron@aarronwalter.com" }, select: ALERT_DESIGNER_SELECT });
+  if (!d) throw new Error("preview row missing");
+  const pool = await db.job.findMany({ where: { active: true, createdAt: { gte: new Date(Date.now() - FIRST_LOOKBACK_DAYS * DAY) } } });
+  const resend = getResend();
+  const from = getFrom();
+  const sent: string[] = [];
+  const skipped: string[] = [];
+
+  const weekly = pickMatches(toDesignerForMatching(d), pool);
+  if (weekly.length) {
+    const e = alertEmail(d, weekly);
+    await resend.emails.send({ from, to, subject: e.subject, html: e.html });
+    sent.push(e.subject);
+  } else skipped.push("weekly alert: no matching roles for the preview profile");
+
+  const criteria = parseCriteria({ role: "Product Design", remote: "true", salary: "true" });
+  const matches = pickMatches(toDesignerForMatching(d), pool.filter((j) => matchesCriteria(j, criteria)));
+  if (matches.length) {
+    const alert = { id: "preview", name: describeCriteria(criteria), criteria, frequency: "WEEKLY", lastSentAt: null, pausedAt: null, pausedReason: null } as unknown as JobAlert;
+    const e = customAlertEmail(d, [{ alert, criteria, matches }]);
+    await resend.emails.send({ from, to, subject: e.subject, html: e.html });
+    sent.push(e.subject);
+  } else skipped.push("saved-search alert: no matching roles");
+
+  const link = `${appUrl()}/alerts/new?token=${d.editToken}&${criteriaToQuery(criteria)}`;
+  const e = signInEmail(d.firstName, describeCriteria(criteria), link);
+  await resend.emails.send({ from, to, subject: e.subject, html: e.html });
+  sent.push(e.subject);
+
+  return { to, sent, skipped };
 }

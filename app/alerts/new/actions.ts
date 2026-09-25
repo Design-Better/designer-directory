@@ -6,6 +6,7 @@ import { getResend, getFrom } from "@/lib/resend";
 import { checkMember, normalizeEmail } from "@/lib/membership";
 import { parseCriteria, describeCriteria, criteriaToQuery, isEmptyCriteria, MAX_SAVED_SEARCHES } from "@/lib/job-criteria";
 import { logAlertEvent } from "@/lib/alert-events";
+import { signInEmail } from "@/lib/job-alerts";
 import { PRIMARY_ROLES, EXPERIENCE_LEVELS } from "@/lib/utils";
 import type { AlertFrequency } from "@prisma/client";
 
@@ -64,18 +65,8 @@ export async function requestAlertLink(formData: FormData) {
 
   const link = `${appUrl()}/alerts/new?token=${designer.editToken}${qs ? `&${qs}` : ""}`;
   const label = describeCriteria(criteria);
-  await getResend().emails.send({
-    from: getFrom(),
-    to: email,
-    subject: "Your sign-in link for job alerts",
-    html: `
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0A0A0A;">
-        <p style="font-size:16px;line-height:1.5;">Hi ${designer.firstName === "there" ? "there" : designer.firstName}, click below to set up your alert${label ? ` for <strong>${label.replace(/[<>&]/g, "")}</strong>` : ""}.</p>
-        <p><a href="${link}" style="display:inline-block;background:#0A0A0A;color:#F5F2EC;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">Set up my alert</a></p>
-        <p style="color:#6B6862;font-size:13px;line-height:1.5;">If you didn't ask for this, ignore it; nothing is created until the link is clicked. The link is personal to this address.</p>
-        <p style="color:#6B6862;font-size:13px;">— Design Better Careers</p>
-      </div>`,
-  });
+  const { subject, html } = signInEmail(designer.firstName, label, link);
+  await getResend().emails.send({ from: getFrom(), to: email, subject, html });
   logAlertEvent({ kind: "custom_request", designerId: designer.id });
   redirect(`/alerts/new?${qs}&sent=1`);
 }

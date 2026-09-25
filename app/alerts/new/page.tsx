@@ -77,7 +77,7 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
       <Shell>
         <H1>Email me these jobs</H1>
         <p className="text-[16px] leading-relaxed mt-5" style={{ color: "var(--text-2)" }}>
-          <strong style={{ color: "var(--text-1)" }}>{label}</strong>, delivered as new roles are posted. Saved searches are a benefit for Design Better subscribers; we&apos;ll check your subscription after you sign in. A directory profile is optional.
+          <strong style={{ color: "var(--text-1)" }}>{label}</strong>, delivered as new roles are posted. Saved searches are a benefit for Design Better paid subscribers; we&apos;ll check your subscription after you sign in.
         </p>
         <form action={requestAlertLink} className="mt-8 flex flex-col gap-4">
           <input type="hidden" name="criteria" value={qs} />
@@ -97,9 +97,6 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
             <span className="text-[14px]" style={{ color: "var(--text-3)" }}>We&apos;ll email a link; no password.</span>
           </div>
         </form>
-        <p className="text-[14px] mt-8" style={{ color: "var(--text-3)" }}>
-          Not a subscriber? Profile-based alerts are free for everyone: <Link href="/join" className="underline" style={{ color: "var(--text-1)" }}>create a profile</Link> and choose a cadence.
-        </p>
       </Shell>
     );
   }

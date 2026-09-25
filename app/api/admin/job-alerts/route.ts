@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendJobAlerts, sendAlertsInvite, sendCustomAlerts } from "@/lib/job-alerts";
+import { sendJobAlerts, sendAlertsInvite, sendCustomAlerts, sendEmailPreviews } from "@/lib/job-alerts";
 import { buildAlertReport, sendAlertReport } from "@/lib/alert-report";
 import { db } from "@/lib/db";
 
@@ -38,6 +38,10 @@ export async function POST(req: NextRequest) {
       data: body.revoke ? { memberStatus: "none", memberCheckedAt: new Date() } : { memberStatus: "active", memberCheckedAt: new Date() },
     });
     return NextResponse.json({ ok: true, mode: "grant", build, updated: r.count, revoked: Boolean(body.revoke) });
+  }
+  // One test of each subscriber email, to an owner address only. Never to a list.
+  if (body.mode === "preview") {
+    return NextResponse.json({ ok: true, mode: "preview", build, ...(await sendEmailPreviews(typeof body.to === "string" ? body.to : undefined)) });
   }
   if (body.mode === "custom") {
     return NextResponse.json({ ok: true, mode: "custom", dryRun, build, ...(await sendCustomAlerts({ dryRun, limit: body.limit })) });
