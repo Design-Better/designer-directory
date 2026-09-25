@@ -110,10 +110,12 @@ designer across all searches (`JobAlertLog`), one email per designer per
 run, stop link pauses everything. A lapsed member's searches pause with
 `pausedReason: not_member` and resume on the next run after they return.
 
-Until db-community ships `/api/members/active-hashes` and
-`/api/members/check` (see `custom-alerts-contract.md`), the roster is
-unavailable and entitlement comes from the recorded status. `mode: "grant"`
-records it by hand for a subscriber the roster cannot see.
+**Blocked on db-community for self-serve unlock.** Until it ships
+`/api/members/check` (and `/api/members/active-hashes` for the lapse recheck;
+see `custom-alerts-contract.md`) and `MEMBERS_API_URL`/`MEMBERS_KEY` are set on
+Vercel, no subscriber can unlock on their own: the page reports the list as
+unreachable. The recorded status only holds what a live check or `mode: "grant"`
+wrote. Hand grants are the only path today.
 
 Verified end to end 2026-09-21 on the preview row: sign-in form, unlock,
 mismatch state, save, dry run, one real send, pause metadata.

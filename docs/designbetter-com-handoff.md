@@ -63,8 +63,11 @@ Nothing to post to us, no shared secret, no auth to implement.
 Two endpoints, specified in `docs/custom-alerts-contract.md` in our repo:
 `GET /api/members/active-hashes` (sha256 of lowercased emails, hourly) and
 `GET /api/members/check?email=` (live, with the Stripe fallback on a miss).
-Until they exist we run on the recorded-status fallback, and Aarron can mark a
-subscriber by hand from our admin endpoint if the roster can't see them.
+**Until they exist, self-serve unlock does not work.** With no roster and no
+live check, every subscriber sees "couldn't reach the subscription list"; the
+recorded-status fallback only holds a status that a live check (or an admin
+grant) wrote first. Correction of 2026-09-25: an earlier version of this note
+said the fallback carried the feature on its own. It does not.
 
 ## To confirm with Aarron
 
