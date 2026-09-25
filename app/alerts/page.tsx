@@ -5,11 +5,13 @@ import { pickMatches, toDesignerForMatching, CADENCE_LABEL, MIN_MATCHES } from "
 import { logAlertEvent } from "@/lib/alert-events";
 import { describeCriteria, parseCriteria } from "@/lib/job-criteria";
 import { setAlertPaused, deleteJobAlert } from "./new/actions";
+import { requestAlertsLink } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 interface SearchParams {
   token?: string;
+  sent?: string;
   stop?: string;
   saved?: string;
   status?: string;
@@ -49,12 +51,39 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
 
   const designer = token ? await db.designer.findUnique({ where: { editToken: token } }) : null;
   if (!designer) {
+    // Front door: no link (or a bad one) → email me my link. Same answer whether or not the address has a profile.
+    if (params.sent === "1") {
+      return (
+        <Shell>
+          <Notice title="Check your inbox">
+            <p>If that address is on a Design Better Careers profile, your personal alerts link is on its way. It can take a minute or two.</p>
+            <p>Nothing arrived? The link goes to the email on your profile, which may be a different address. No profile yet? <Link href="/join" className="underline" style={{ color: "var(--text-1)" }}>Join the directory</Link>.</p>
+          </Notice>
+        </Shell>
+      );
+    }
     return (
       <Shell>
-        <Notice title="That link didn't work">
-          <p>Alert links are personal and come from an email we sent you. Open the most recent one and use the link there.</p>
-          <p>No profile yet? <Link href="/join" className="underline" style={{ color: "var(--text-1)" }}>Join the directory</Link>.</p>
+        <Notice title={token ? "That link didn't work" : "Job alerts"}>
+          <p>
+            {token ? "We couldn’t match that link to a profile. " : ""}
+            Enter the email on your Design Better Careers profile and we&apos;ll send you a link to choose the roles you want and how often you hear about them.
+          </p>
         </Notice>
+        <form action={requestAlertsLink} className="mt-8 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5 sm:w-2/3">
+            <label htmlFor="email" className="font-mono text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>Email</label>
+            <input id="email" name="email" type="email" required autoComplete="email" className="h-10 px-3 text-[14px] w-full focus-visible:outline-2 focus-visible:outline-[#FF4725] focus-visible:outline-offset-2" style={{ border: "1px solid var(--input-border)", background: "var(--surface-1)", color: "var(--text-1)" }} />
+            {params.error === "email" && <p className="text-[14px]" style={{ color: "var(--book-fg)" }}>That doesn&apos;t look like an email address.</p>}
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <button type="submit" className={CTA} style={{ background: "#0A0A0A", color: "#F5F2EC" }}>Email me my link</button>
+            <span className="text-[14px]" style={{ color: "var(--text-3)" }}>No password needed.</span>
+          </div>
+        </form>
+        <p className="text-[14px] mt-8" style={{ color: "var(--text-3)" }}>
+          No profile yet? <Link href="/join" className="underline" style={{ color: "var(--text-1)" }}>Join the directory</Link>, then come back here to set up alerts.
+        </p>
       </Shell>
     );
   }

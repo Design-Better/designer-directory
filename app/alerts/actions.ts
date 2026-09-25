@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { logAlertEvent } from "@/lib/alert-events";
+import { getResend, getFrom } from "@/lib/resend";
+import { signInEmail } from "@/lib/job-alerts";
+import { normalizeEmail } from "@/lib/membership";
 import { PRIMARY_ROLES, EXPERIENCE_LEVELS, ROLE_TYPES, REMOTE_PREFERENCES } from "@/lib/utils";
 import type { AlertFrequency, WorkStatus } from "@prisma/client";
 
@@ -76,4 +79,36 @@ export async function saveAlertPreferences(formData: FormData) {
   });
   logAlertEvent({ kind: "prefs_saved", designerId: designer.id, detail: `${status}/${frequency}` });
   redirect(`/alerts?token=${encodeURIComponent(token)}&saved=1`);
+}
+
+// Per-instance, resets on cold start: blunts casual abuse of the link form,
+// same limitation as the saved-search sign-in.
+const linkAttempts = new Map<string, { n: number; at: number }>();
+function limited(key: string, max = 5): boolean {
+  const now = Date.now();
+  const cur = linkAttempts.get(key);
+  if (!cur || now - cur.at > 60 * 60 * 1000) { linkAttempts.set(key, { n: 1, at: now }); return false; }
+  cur.n++;
+  return cur.n > max;
+}
+
+/**
+ * The front door for free profile alerts: a designer without their link gives
+ * the email on their profile and we send it. The page shows the same answer
+ * whether or not the address has a profile, so it can't be used to learn who
+ * is in the directory. Unknown addresses get nothing and nothing is created.
+ * The email is the approved sign-in template (Email 3), unchanged.
+ */
+export async function requestAlertsLink(formData: FormData) {
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) redirect("/alerts?error=email");
+  if (limited(email)) redirect("/alerts?sent=1");
+  const designer = await db.designer.findUnique({ where: { email }, select: { id: true, firstName: true, editToken: true } });
+  if (designer) {
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers";
+    const { subject, html } = signInEmail(designer.firstName, "", `${base}/alerts?token=${designer.editToken}`);
+    await getResend().emails.send({ from: getFrom(), to: email, subject, html });
+    logAlertEvent({ kind: "alerts_link_request", designerId: designer.id });
+  }
+  redirect("/alerts?sent=1");
 }
