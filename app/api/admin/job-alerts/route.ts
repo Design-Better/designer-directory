@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
   if (body.mode === "alerts") {
     return NextResponse.json({ ok: true, mode: "alerts", dryRun, build, ...(await sendJobAlerts({ dryRun, limit: body.limit })) });
   }
-  // Support tool: record a designer as a member (or not) by hand. Used to test
-  // the paid flow before db-community's roster exists, and for the rare person
-  // whose subscription the roster cannot see. Trusted for 30 days.
+  // Support tool: grant (or revoke) saved searches by hand, for testing and for
+  // the rare person db-community cannot see. "granted" is never overwritten by
+  // a community answer and lasts 30 days from the grant.
   if (body.mode === "grant" && body.grantEmail) {
     const r = await db.designer.updateMany({
       where: { email: body.grantEmail.trim().toLowerCase() },
-      data: body.revoke ? { memberStatus: "none", memberCheckedAt: new Date() } : { memberStatus: "active", memberCheckedAt: new Date() },
+      data: body.revoke ? { memberStatus: "none", memberCheckedAt: new Date() } : { memberStatus: "granted", memberCheckedAt: new Date() },
     });
     return NextResponse.json({ ok: true, mode: "grant", build, updated: r.count, revoked: Boolean(body.revoke) });
   }

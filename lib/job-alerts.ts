@@ -8,7 +8,7 @@ import {
 } from "@/lib/matching";
 import type { AlertFrequency, Designer, Job, JobAlert } from "@prisma/client";
 import { parseCriteria, matchesCriteria, describeCriteria, criteriaToQuery, type Criteria } from "@/lib/job-criteria";
-import { memberRoster, isMember } from "@/lib/membership";
+import { entitlements, isMember, statusToRecord } from "@/lib/membership";
 
 /**
  * Designer job alerts.
@@ -418,6 +418,8 @@ export function customAlertEmail(
 }
 
 export interface SendCustomAlertsResult {
+  /** "live" when db-community answered; "recorded" when it couldn't be reached and recorded statuses were used. */
+  membersLookup?: "live" | "recorded";
   alerts: number;
   due: number;
   pausedNotMember: number;
@@ -448,11 +450,20 @@ export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number 
   result.alerts = alerts.length;
   if (!alerts.length) return result;
 
-  // Membership gate, one roster fetch for the whole run.
-  const roster = await memberRoster();
+  // Membership gate: one batch lookup for the whole run (null = db-community
+  // unreachable, so isMember falls back to each designer's recorded status).
+  const ents = await entitlements(alerts.flatMap((a) => [a.designer.email, a.designer.memberEmail ?? ""]));
+  result.membersLookup = ents ? "live" : "recorded";
+  const recorded = new Set<string>();
   const byDesigner = new Map<string, typeof alerts>();
   for (const a of alerts) {
-    const member = isMember(a.designer, roster, now);
+    const member = isMember(a.designer, ents, now);
+    // Refresh the recorded status once per designer, so an outage later falls back to today's answer.
+    const status = statusToRecord(a.designer, ents, now);
+    if (status && !dryRun && !recorded.has(a.designerId)) {
+      recorded.add(a.designerId);
+      await db.designer.update({ where: { id: a.designerId }, data: { memberStatus: status, memberCheckedAt: now } });
+    }
     if (!member && !a.pausedAt) {
       result.pausedNotMember++;
       if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: now, pausedReason: "not_member" } });

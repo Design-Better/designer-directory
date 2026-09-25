@@ -45,33 +45,46 @@ for the designer's email and `memberEmail`. Not a member → the custom alerts
 are paused with `pausedReason: not_member`, never deleted; a resubscribe
 unpauses them at the next run. Profile-based alerts are unaffected.
 
-## Ask of db-community
+## db-community's API (as shipped, 2026-09-25)
 
-We prefer a set to a per-person round trip, for the resilience reason you gave,
-but the roster should not leave your database in the clear. Proposed:
-
-```
-GET /api/members/active-hashes     Authorization: Bearer <MEMBERS_KEY>
-→ { "hashes": ["<sha256 of lowercased, trimmed email>", ...],
-    "count": 1071, "asOf": "2026-09-21T13:00:00Z" }
-```
-
-Entitlement rule is yours, verbatim: `status` is `active` or `past_due`.
-Careers hashes its own emails the same way, caches the set for an hour, and
-on a cache miss keeps the last good set (stale beats failed). Nothing on our
-side can list members; the set answers a boolean.
-
-Plus one narrow lookup for the moment of unlock, so a new subscriber isn't
-told "no" because the sync is six hours behind:
+The hashed roster we first proposed (`/api/members/active-hashes`) was not
+built and returns 404 permanently. db-community shipped a batch lookup
+instead, and careers uses it:
 
 ```
-GET /api/members/check?email=<address>   same key
-→ { "entitled": true|false, "status": "active"|"past_due"|null, "asOf": "..." }
+POST https://designbetter.community/api/members/entitlement
+  Authorization: Bearer <MEMBERS_KEY>
+  { "emails": ["a@example.com", "b@example.com"] }        // max 500 per call
+→ { "asOf": "...", "count": 2,
+    "results": [ { "email": "a@example.com", "entitled": true,  "status": "active", "plan": "annual" },
+                 { "email": "b@example.com", "entitled": false, "status": null,     "plan": null } ] }
 ```
 
-On a local miss, query Stripe once for that email before answering (the live
-fallback you already decided on). Read-only: no Member row created. Never
-echo the email back.
+Results come back in the order and length sent; unknown addresses are
+`entitled: false`. Local data only, no live Stripe call. `plan` is
+`annual | monthly | comp | gift`.
+
+For the moment of unlock, a live point check that falls back to Stripe:
+
+```
+GET https://designbetter.community/api/members/check?email=<address>   same key
+→ { "entitled": true|false, "status": ..., "plan": ... }
+```
+
+"/entitlement for your cron, /check at the moment of unlock." Rate limit:
+30 requests a minute. The entitlement rule is db-community's: `status` is
+`active` or `past_due`.
+
+**How careers uses it** (`lib/membership.ts`):
+- The cron makes one batch call per run for every saved-search owner (both
+  addresses), pauses or unpauses from `entitled`, and records the answer on
+  the designer.
+- The unlock page and the save action do a batch lookup, then `/check` on
+  each address, so a subscriber from five minutes ago gets in.
+- If db-community can't be reached, careers trusts the recorded status for
+  30 days. Stale beats failed; an outage never pauses a paying member.
+- An admin grant (`memberStatus: "granted"`) is never overwritten by a
+  community answer and lasts 30 days.
 
 ## Ask of designbetter.com
 
@@ -101,9 +114,9 @@ add it here." Then a second field, stored as `memberEmail`.
 
 ## Sequence
 
-1. db-community: the two endpoints (small; the sync and entitlement rule exist).
+1. db-community: the two endpoints. Shipped 2026-09-25 (`/entitlement` and `/check`).
 2. careers: schema, criteria-filtered matching, `/alerts/new`, membership cache,
    paid daily cron, pause/unpause. About two days once the endpoints answer.
 3. designbetter.com: the button, once `/alerts/new` is live.
 
-Until 1 lands, careers builds against a stub set so 2 does not wait.
+`MEMBERS_STUB_EMAILS` stands in for db-community in development.

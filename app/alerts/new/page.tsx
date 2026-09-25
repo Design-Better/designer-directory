@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { parseCriteria, describeCriteria, criteriaToQuery, MAX_SAVED_SEARCHES } from "@/lib/job-criteria";
-import { checkMember, isMember, memberRoster } from "@/lib/membership";
+import { resolveMember } from "@/lib/membership";
 import { NewAlertForm } from "./NewAlertForm";
 import { requestAlertLink, addMemberEmail } from "./actions";
 
@@ -102,21 +102,11 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
   }
 
   // --- Identified: membership -----------------------------------------------
-  const roster = await memberRoster();
-  let entitled = isMember(designer, roster);
-  if (!entitled && !designer.memberCheckedAt) {
-    // First visit: one live check on the sign-in address, recorded if it passes.
-    const c = await checkMember(designer.email);
-    if (c.entitled) {
-      await db.designer.update({ where: { id: designer.id }, data: { memberStatus: c.status, memberCheckedAt: new Date() } });
-      entitled = true;
-    } else {
-      await db.designer.update({ where: { id: designer.id }, data: { memberStatus: "none", memberCheckedAt: new Date() } });
-    }
-  }
+  // Batch lookup, then a live check (sees brand-new subscribers), then the recorded status if db-community is down.
+  const { entitled, live } = await resolveMember(designer);
 
   if (!entitled) {
-    const state = sp.get("member");
+    const state = sp.get("member") ?? (live ? null : "unavailable");
     return (
       <Shell>
         <H1>One more step</H1>

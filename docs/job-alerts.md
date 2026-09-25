@@ -99,7 +99,7 @@ subscribers can also save up to five searches with explicit criteria.
 | Entry page | `/alerts/new?<criteria>` (criteria = `/api/v1/jobs` params); `?token=` once signed in |
 | Sign-in link, unlock, save, pause, delete | `app/alerts/new/actions.ts` |
 | Criteria parse/filter/describe | `lib/job-criteria.ts` (hard filters before `scoreDesigner`) |
-| Membership | `lib/membership.ts`: db-community roster (hashed, hourly) when `MEMBERS_API_URL`/`MEMBERS_KEY` are set; otherwise the status recorded at unlock, trusted 30 days |
+| Membership | `lib/membership.ts`: db-community `POST /api/members/entitlement` (batch, cron) and `GET /api/members/check` (live, unlock); recorded status trusted 30 days when db-community is unreachable |
 | Sender | `sendCustomAlerts` in `lib/job-alerts.ts`; cron `/api/cron/custom-alerts` weekdays 08:00 UTC |
 | Admin | `POST /api/admin/job-alerts` modes `custom` (`dryRun`), `grant` (`grantEmail`, `revoke`) |
 | Management | saved searches listed on `/alerts?token=` with pause/resume/delete |
@@ -110,12 +110,11 @@ designer across all searches (`JobAlertLog`), one email per designer per
 run, stop link pauses everything. A lapsed member's searches pause with
 `pausedReason: not_member` and resume on the next run after they return.
 
-**Blocked on db-community for self-serve unlock.** Until it ships
-`/api/members/check` (and `/api/members/active-hashes` for the lapse recheck;
-see `custom-alerts-contract.md`) and `MEMBERS_API_URL`/`MEMBERS_KEY` are set on
-Vercel, no subscriber can unlock on their own: the page reports the list as
-unreachable. The recorded status only holds what a live check or `mode: "grant"`
-wrote. Hand grants are the only path today.
+**Self-serve unlock needs two Vercel env vars.** db-community's endpoints are
+live (2026-09-25). Unlock works once `MEMBERS_API_URL=https://designbetter.community`
+and `MEMBERS_KEY` (issued by db-community) are set on the careers project.
+Until then the page reports the subscription list as unreachable, and
+`mode: "grant"` is the only path.
 
 Verified end to end 2026-09-21 on the preview row: sign-in form, unlock,
 mismatch state, save, dry run, one real send, pause metadata.

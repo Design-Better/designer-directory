@@ -58,16 +58,13 @@ decisions Aarron made, and the two things still needed from you.
 
 Nothing to post to us, no shared secret, no auth to implement.
 
-## Still needed from db-community
+## Membership
 
-Two endpoints, specified in `docs/custom-alerts-contract.md` in our repo:
-`GET /api/members/active-hashes` (sha256 of lowercased emails, hourly) and
-`GET /api/members/check?email=` (live, with the Stripe fallback on a miss).
-**Until they exist, self-serve unlock does not work.** With no roster and no
-live check, every subscriber sees "couldn't reach the subscription list"; the
-recorded-status fallback only holds a status that a live check (or an admin
-grant) wrote first. Correction of 2026-09-25: an earlier version of this note
-said the fallback carried the feature on its own. It does not.
+db-community's endpoints shipped 2026-09-25: `POST /api/members/entitlement`
+(batch) and `GET /api/members/check` (live). Careers is wired to both.
+Self-serve unlock goes live once careers has `MEMBERS_API_URL` and
+`MEMBERS_KEY` set on Vercel; careers will confirm when it does. Don't ship
+the "Email me these jobs" button before that.
 
 ## To confirm with Aarron
 

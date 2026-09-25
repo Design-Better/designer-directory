@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
-import { checkMember, normalizeEmail } from "@/lib/membership";
+import { checkMember, normalizeEmail, resolveMember } from "@/lib/membership";
 import { parseCriteria, describeCriteria, criteriaToQuery, isEmptyCriteria, MAX_SAVED_SEARCHES } from "@/lib/job-criteria";
 import { logAlertEvent } from "@/lib/alert-events";
 import { signInEmail } from "@/lib/job-alerts";
@@ -88,7 +88,7 @@ export async function addMemberEmail(formData: FormData) {
   if (check.entitled) {
     await db.designer.update({
       where: { id: designer.id },
-      data: { memberEmail, memberStatus: check.status, memberCheckedAt: new Date() },
+      data: { memberEmail, memberStatus: check.status === "none" ? "active" : check.status, memberCheckedAt: new Date() },
     });
     redirect(`/alerts/new?token=${token}&${qs}`);
   }
@@ -103,22 +103,8 @@ export async function saveJobAlert(formData: FormData) {
     : null;
   if (!designer) redirect("/alerts?error=notfound");
 
-  const { isMember, memberRoster } = await import("@/lib/membership");
-  const roster = await memberRoster();
-  let entitled = isMember(designer, roster);
-  if (!entitled) {
-    // Last resort: a live check on both addresses, recorded if it passes.
-    for (const e of [designer.email, designer.memberEmail]) {
-      if (!e) continue;
-      const c = await checkMember(e);
-      if (c.entitled) {
-        await db.designer.update({ where: { id: designer.id }, data: { memberStatus: c.status, memberCheckedAt: new Date() } });
-        entitled = true;
-        break;
-      }
-    }
-  }
-  if (!entitled) redirect(`/alerts/new?token=${token}&member=notfound`);
+  const { entitled, live } = await resolveMember(designer);
+  if (!entitled) redirect(`/alerts/new?token=${token}&member=${live ? "notfound" : "unavailable"}`);
   if (designer._count.jobAlerts >= MAX_SAVED_SEARCHES) redirect(`/alerts?token=${token}&limit=1`);
 
   const criteria = parseCriteria(Object.fromEntries(
