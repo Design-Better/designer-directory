@@ -284,7 +284,7 @@ export async function JobsBoard({ searchParams, basePath, title, deck }: JobsBoa
                     href={`/alerts/new?${new URLSearchParams(Object.fromEntries(Object.entries({ role: params.role === LEADERSHIP_ROLE ? undefined : params.role, leadership: params.role === LEADERSHIP_ROLE ? "true" : undefined, level: params.level, type: params.type, remote: params.remote, company: params.company }).filter(([, v]) => Boolean(v)) as [string, string][])).toString()}`}
                     className="h-8 px-3 font-mono text-[11px] font-normal uppercase tracking-[0.12em] transition-colors duration-[120ms] flex items-center"
                     style={{ border: "1px solid var(--input-border)", color: "var(--text-1)" }}
-                    title="Save this search and get new matches by email (Design Better subscriber benefit)"
+                    title="Save this search and get new matches by email (annual Design Better subscriber benefit)"
                   >
                     Email me these jobs
                   </Link>

@@ -124,7 +124,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     <Shell>
       {(savedSearches.length > 0 || justSaved) && (
         <section className="mb-12 pb-10" style={{ borderBottom: "1px solid var(--divider)" }}>
-          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>Saved searches · Design Better subscriber benefit</p>
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>Saved searches · Annual Design Better subscriber benefit</p>
           {justSaved && (
             <p className="text-[16px] leading-relaxed mt-3" style={{ color: "var(--text-1)" }}>
               Saved. The first email goes out on the next weekday morning that three or more new roles match.
@@ -140,7 +140,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                     <p className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>{a.name}</p>
                     <p className="text-[14px] mt-0.5" style={{ color: "var(--text-3)" }}>
                       {describeCriteria(c)} · {CADENCE_LABEL[a.frequency]}
-                      {paused ? ` · paused${a.pausedReason === "not_member" ? " (subscription not found)" : ""}` : a.lastSentAt ? ` · last sent ${a.lastSentAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : " · nothing sent yet"}
+                      {paused ? ` · paused${a.pausedReason === "not_member" ? " (subscription not found)" : a.pausedReason === "not_annual" ? " (annual plan required)" : ""}` : a.lastSentAt ? ` · last sent ${a.lastSentAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : " · nothing sent yet"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

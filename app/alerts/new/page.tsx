@@ -9,7 +9,7 @@ import { requestAlertLink, addMemberEmail } from "./actions";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Email me these jobs",
-  description: "Save a search on the Design Better Careers board and get matching roles by email. A benefit for Design Better subscribers.",
+  description: "Save a search on the Design Better Careers board and get matching roles by email. A benefit for annual Design Better subscribers.",
   robots: { index: false, follow: true },
 };
 
@@ -77,7 +77,7 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
       <Shell>
         <H1>Email me these jobs</H1>
         <p className="text-[16px] leading-relaxed mt-5" style={{ color: "var(--text-2)" }}>
-          <strong style={{ color: "var(--text-1)" }}>{label}</strong>, delivered as new roles are posted. Saved searches are a benefit for Design Better paid subscribers; we&apos;ll check your subscription after you sign in.
+          <strong style={{ color: "var(--text-1)" }}>{label}</strong>, delivered as new roles are posted. Saved searches are a benefit for annual Design Better subscribers; we&apos;ll check your subscription after you sign in.
         </p>
         <form action={requestAlertLink} className="mt-8 flex flex-col gap-4">
           <input type="hidden" name="criteria" value={qs} />
@@ -103,7 +103,24 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
 
   // --- Identified: membership -----------------------------------------------
   // Batch lookup, then a live check (sees brand-new subscribers), then the recorded status if db-community is down.
-  const { entitled, live } = await resolveMember(designer);
+  const { entitled, annual, planKnown, live } = await resolveMember(designer);
+
+  // Paid, but not on an annual plan (or too new for us to see the plan): new saved searches are annual-only.
+  if (entitled && !annual) {
+    return (
+      <Shell>
+        <H1>Saved searches are part of the annual membership</H1>
+        <p className="text-[16px] leading-relaxed mt-5" style={{ color: "var(--text-2)" }}>
+          {planKnown
+            ? <>Your subscription is monthly, so saved searches aren&apos;t included. Switching to annual in your Substack settings opens them up.</>
+            : <>We found your subscription, but it&apos;s too new for us to see your plan. If you&apos;re on an annual plan, try this link again in a few hours.</>}
+        </p>
+        <p className="text-[14px] mt-8" style={{ color: "var(--text-3)" }}>
+          Meanwhile, profile-based alerts are free: <Link href={`/alerts?token=${token}`} className="underline" style={{ color: "var(--text-1)" }}>set a cadence</Link> and we&apos;ll match roles to your profile.
+        </p>
+      </Shell>
+    );
+  }
 
   if (!entitled) {
     const state = sp.get("member") ?? (live ? null : "unavailable");
@@ -111,7 +128,7 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
       <Shell>
         <H1>One more step</H1>
         <p className="text-[16px] leading-relaxed mt-5" style={{ color: "var(--text-2)" }}>
-          Saved searches are a benefit for paying Design Better subscribers. We couldn&apos;t find a subscription under <strong style={{ color: "var(--text-1)" }}>{designer.email}</strong>
+          Saved searches are a benefit for annual Design Better subscribers. We couldn&apos;t find a subscription under <strong style={{ color: "var(--text-1)" }}>{designer.email}</strong>
           {designer.memberEmail ? <> or <strong style={{ color: "var(--text-1)" }}>{designer.memberEmail}</strong></> : null}.
           {" "}Many people subscribe with a different address than the one they use for work.
         </p>

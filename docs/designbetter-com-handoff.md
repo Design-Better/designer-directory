@@ -66,6 +66,10 @@ Self-serve unlock goes live once careers has `MEMBERS_API_URL` and
 `MEMBERS_KEY` set on Vercel; careers will confirm when it does. Don't ship
 the "Email me these jobs" button before that.
 
+Saved searches are for annual subscribers (annual, comp, gift) as of
+2026-09-25; monthly subscribers are told so on our page. If your button or
+its helper text names the benefit, say annual.
+
 ## To confirm with Aarron
 
 - Subscribe URL for non-members is confirmed: `https://designbetterpodcast.com/subscribe`

@@ -78,6 +78,7 @@ model Designer {
   memberEmail       String?
   memberStatus      String?    // active | past_due | none
   memberCheckedAt   DateTime?
+  memberPlan        String?    // annual | monthly | comp | gift (db-community); annual, comp, gift may create saved searches
 
   @@index([publicProfile, hidden, openToWork])
   @@index([alertFrequency])
@@ -122,7 +123,7 @@ model JobAlert {
   frequency    AlertFrequency @default(WEEKLY)
   lastSentAt   DateTime?
   pausedAt     DateTime?
-  pausedReason String?        // not_member | user | thin
+  pausedReason String?        // not_member | not_annual | user | thin
   designer     Designer       @relation(fields: [designerId], references: [id], onDelete: Cascade)
 
   @@index([designerId])

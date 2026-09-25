@@ -23,6 +23,11 @@ import { db } from "@/lib/db";
  * memberStatus "granted" is a manual grant from the admin route. Community
  * answers never overwrite it; it lasts RECORDED_STATUS_TTL_DAYS from the grant.
  *
+ * Annual-only (Aarron, 2026-09-25): new saved searches need an annual, comp
+ * or gift plan, the same line db-community draws for Slack and Design Club.
+ * Searches created before ANNUAL_ONLY_FROM keep sending on any paid plan.
+ * An unknown plan is not waved through (db-community's rule too).
+ *
  * MEMBERS_STUB_EMAILS (comma list) stands in for db-community in development;
  * it is ignored once MEMBERS_API_URL and MEMBERS_KEY are set.
  */
@@ -30,6 +35,12 @@ import { db } from "@/lib/db";
 const DAY = 864e5;
 const BATCH = 500;
 export const RECORDED_STATUS_TTL_DAYS = 30;
+/** Saved searches created before this keep sending on any paid plan: end of launch day, 2026-09-25, US Eastern. */
+export const ANNUAL_ONLY_FROM = new Date("2026-09-26T04:00:00Z");
+const ANNUAL_PLANS = new Set(["annual", "comp", "gift"]);
+export function isAnnualPlan(plan: string | null | undefined): boolean {
+  return ANNUAL_PLANS.has(plan ?? "");
+}
 
 export type MemberStatus = "active" | "past_due" | "none";
 export type MemberPlan = "annual" | "monthly" | "comp" | "gift" | null;
@@ -114,7 +125,8 @@ export async function checkMember(email: string): Promise<Entitlement & { live: 
   return hit ? { ...hit, live: true } : { entitled: false, status: "none", plan: null, live: false };
 }
 
-type MemberFields = Pick<Designer, "email" | "memberEmail" | "memberStatus" | "memberCheckedAt">;
+type MemberFields = Pick<Designer, "email" | "memberEmail" | "memberStatus" | "memberCheckedAt" | "memberPlan">;
+export interface Tier { entitled: boolean; annual: boolean }
 
 function addresses(d: MemberFields): string[] {
   return [d.email, d.memberEmail].filter((e): e is string => Boolean(e)).map(normalizeEmail);
@@ -130,53 +142,71 @@ function grantedMember(d: MemberFields, now: Date): boolean {
 }
 
 /**
- * Is this designer a paying member? `ents` is a batch result (or null when
- * db-community couldn't be asked). Either address counts. A manual grant
- * always counts while fresh.
+ * Which tier is this designer on? `ents` is a batch result, or null when
+ * db-community couldn't be asked (then the recorded status and plan, while
+ * fresh). Either address counts. A manual grant counts as annual.
  */
-export function isMember(d: MemberFields, ents: Map<string, Entitlement> | null, now = new Date()): boolean {
-  if (grantedMember(d, now)) return true;
-  if (!ents) return recordedMember(d, now);
-  return addresses(d).some((e) => ents.get(e)?.entitled);
+export function memberTier(d: MemberFields, ents: Map<string, Entitlement> | null, now = new Date()): Tier {
+  if (grantedMember(d, now)) return { entitled: true, annual: true };
+  if (!ents) {
+    const entitled = recordedMember(d, now);
+    return { entitled, annual: entitled && isAnnualPlan(d.memberPlan) };
+  }
+  const hits = addresses(d).map((e) => ents.get(e)).filter((x): x is Entitlement => Boolean(x?.entitled));
+  return { entitled: hits.length > 0, annual: hits.some((h) => isAnnualPlan(h.plan)) };
+}
+
+/** May this saved search send? Annual members always; any paid member for a search made before ANNUAL_ONLY_FROM. */
+export function alertAllowed(tier: Tier, alertCreatedAt: Date): boolean {
+  return tier.annual || (tier.entitled && alertCreatedAt < ANNUAL_ONLY_FROM);
 }
 
 /**
- * The best answer for a status to record on the designer after a batch
- * lookup, or null to leave the record alone (grant, or no answer).
+ * What to record on the designer after a batch lookup, or null to leave the
+ * record alone (grant, or no answer).
  */
-export function statusToRecord(d: MemberFields, ents: Map<string, Entitlement> | null, now = new Date()): MemberStatus | null {
+export function recordFor(d: MemberFields, ents: Map<string, Entitlement> | null, now = new Date()): { memberStatus: MemberStatus; memberPlan: string | null } | null {
   if (!ents || grantedMember(d, now)) return null;
   const hits = addresses(d).map((e) => ents.get(e)).filter((x): x is Entitlement => Boolean(x));
   if (!hits.length) return null;
-  return hits.find((h) => h.entitled)?.status ?? "none";
+  const best = hits.find((h) => h.entitled && isAnnualPlan(h.plan)) ?? hits.find((h) => h.entitled);
+  return best ? { memberStatus: best.status === "none" ? "active" : best.status, memberPlan: best.plan } : { memberStatus: "none", memberPlan: null };
 }
 
 /**
  * Full check for the unlock flow (page and save action): batch lookup, then a
  * live check on each address, then the recorded status if db-community
  * couldn't be reached at all. Records what it learns on the designer.
+ *
+ * `planKnown: false` means entitled by the live check but not yet in
+ * db-community's local data, whose plan we can't see (the live check doesn't
+ * return one). Not waved through as annual.
  */
-export async function resolveMember(d: MemberFields & { id: string }): Promise<{ entitled: boolean; live: boolean }> {
+export async function resolveMember(d: MemberFields & { id: string }): Promise<Tier & { planKnown: boolean; live: boolean }> {
   const now = new Date();
-  if (grantedMember(d, now)) return { entitled: true, live: true };
-  const record = (memberStatus: MemberStatus) =>
-    db.designer.update({ where: { id: d.id }, data: { memberStatus, memberCheckedAt: now } });
+  if (grantedMember(d, now)) return { entitled: true, annual: true, planKnown: true, live: true };
+  const record = (data: { memberStatus: MemberStatus; memberPlan: string | null }) =>
+    db.designer.update({ where: { id: d.id }, data: { ...data, memberCheckedAt: now } });
 
   const ents = await entitlements(addresses(d));
-  if (isMember(d, ents, now) && ents) {
-    await record(statusToRecord(d, ents, now) ?? "active");
-    return { entitled: true, live: true };
+  if (ents) {
+    const tier = memberTier(d, ents, now);
+    if (tier.entitled) {
+      const r = recordFor(d, ents, now);
+      if (r) await record(r);
+      return { ...tier, planKnown: true, live: true };
+    }
   }
   let live = Boolean(ents);
   for (const e of addresses(d)) {
     const c = await checkMember(e);
     live ||= c.live;
     if (c.entitled) {
-      await record(c.status === "none" ? "active" : c.status);
-      return { entitled: true, live: true };
+      await record({ memberStatus: c.status === "none" ? "active" : c.status, memberPlan: c.plan });
+      return { entitled: true, annual: isAnnualPlan(c.plan), planKnown: c.plan !== null, live: true };
     }
   }
-  if (!live) return { entitled: recordedMember(d, now), live: false };
-  await record("none");
-  return { entitled: false, live: true };
+  if (!live) return { ...memberTier(d, null, now), planKnown: true, live: false };
+  await record({ memberStatus: "none", memberPlan: null });
+  return { entitled: false, annual: false, planKnown: true, live: true };
 }

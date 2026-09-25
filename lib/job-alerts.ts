@@ -8,7 +8,7 @@ import {
 } from "@/lib/matching";
 import type { AlertFrequency, Designer, Job, JobAlert } from "@prisma/client";
 import { parseCriteria, matchesCriteria, describeCriteria, criteriaToQuery, type Criteria } from "@/lib/job-criteria";
-import { entitlements, isMember, statusToRecord } from "@/lib/membership";
+import { entitlements, memberTier, alertAllowed, recordFor } from "@/lib/membership";
 
 /**
  * Designer job alerts.
@@ -443,8 +443,8 @@ export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number 
   const result: SendCustomAlertsResult = { alerts: 0, due: 0, pausedNotMember: 0, unpaused: 0, sent: 0, skippedThin: 0, errors: [], samples: [] };
 
   const alerts = await db.jobAlert.findMany({
-    where: { OR: [{ pausedAt: null }, { pausedReason: "not_member" }] },
-    include: { designer: { select: { ...ALERT_DESIGNER_SELECT, memberEmail: true, memberStatus: true, memberCheckedAt: true } } },
+    where: { OR: [{ pausedAt: null }, { pausedReason: { in: ["not_member", "not_annual"] } }] },
+    include: { designer: { select: { ...ALERT_DESIGNER_SELECT, memberEmail: true, memberStatus: true, memberCheckedAt: true, memberPlan: true } } },
     orderBy: { lastSentAt: { sort: "asc", nulls: "first" } },
   });
   result.alerts = alerts.length;
@@ -457,19 +457,21 @@ export async function sendCustomAlerts(opts: { dryRun?: boolean; limit?: number 
   const recorded = new Set<string>();
   const byDesigner = new Map<string, typeof alerts>();
   for (const a of alerts) {
-    const member = isMember(a.designer, ents, now);
+    // Annual plans send; other paid plans only for searches made before annual-only began.
+    const tier = memberTier(a.designer, ents, now);
+    const member = alertAllowed(tier, a.createdAt);
     // Refresh the recorded status once per designer, so an outage later falls back to today's answer.
-    const status = statusToRecord(a.designer, ents, now);
-    if (status && !dryRun && !recorded.has(a.designerId)) {
+    const rec = recordFor(a.designer, ents, now);
+    if (rec && !dryRun && !recorded.has(a.designerId)) {
       recorded.add(a.designerId);
-      await db.designer.update({ where: { id: a.designerId }, data: { memberStatus: status, memberCheckedAt: now } });
+      await db.designer.update({ where: { id: a.designerId }, data: { ...rec, memberCheckedAt: now } });
     }
     if (!member && !a.pausedAt) {
       result.pausedNotMember++;
-      if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: now, pausedReason: "not_member" } });
+      if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: now, pausedReason: tier.entitled ? "not_annual" : "not_member" } });
       continue;
     }
-    if (member && a.pausedAt && a.pausedReason === "not_member") {
+    if (member && a.pausedAt && (a.pausedReason === "not_member" || a.pausedReason === "not_annual")) {
       result.unpaused++;
       if (!dryRun) await db.jobAlert.update({ where: { id: a.id }, data: { pausedAt: null, pausedReason: null } });
       a.pausedAt = null;

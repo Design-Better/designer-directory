@@ -88,7 +88,7 @@ export async function addMemberEmail(formData: FormData) {
   if (check.entitled) {
     await db.designer.update({
       where: { id: designer.id },
-      data: { memberEmail, memberStatus: check.status === "none" ? "active" : check.status, memberCheckedAt: new Date() },
+      data: { memberEmail, memberStatus: check.status === "none" ? "active" : check.status, memberPlan: check.plan, memberCheckedAt: new Date() },
     });
     redirect(`/alerts/new?token=${token}&${qs}`);
   }
@@ -99,12 +99,14 @@ export async function addMemberEmail(formData: FormData) {
 export async function saveJobAlert(formData: FormData) {
   const token = String(formData.get("token") ?? "");
   const designer = token
-    ? await db.designer.findUnique({ where: { editToken: token }, select: { id: true, email: true, memberEmail: true, memberStatus: true, memberCheckedAt: true, _count: { select: { jobAlerts: true } } } })
+    ? await db.designer.findUnique({ where: { editToken: token }, select: { id: true, email: true, memberEmail: true, memberStatus: true, memberCheckedAt: true, memberPlan: true, _count: { select: { jobAlerts: true } } } })
     : null;
   if (!designer) redirect("/alerts?error=notfound");
 
-  const { entitled, live } = await resolveMember(designer);
+  // New saved searches are annual-only (Aarron, 2026-09-25). The page shows the reason; this just refuses.
+  const { entitled, annual, live } = await resolveMember(designer);
   if (!entitled) redirect(`/alerts/new?token=${token}&member=${live ? "notfound" : "unavailable"}`);
+  if (!annual) redirect(`/alerts/new?token=${token}`);
   if (designer._count.jobAlerts >= MAX_SAVED_SEARCHES) redirect(`/alerts?token=${token}&limit=1`);
 
   const criteria = parseCriteria(Object.fromEntries(

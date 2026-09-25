@@ -75,6 +75,16 @@ GET https://designbetter.community/api/members/check?email=<address>   same key
 30 requests a minute. The entitlement rule is db-community's: `status` is
 `active` or `past_due`.
 
+**Annual-only (Aarron, 2026-09-25).** New saved searches need an annual,
+comp or gift plan, the same line db-community draws for Slack and Design
+Club. Searches created before end of day 2026-09-25 US Eastern
+(`ANNUAL_ONLY_FROM`) keep sending on any paid plan and stay manageable
+(pause, resume, delete). A post-launch search whose owner drops to monthly
+pauses with `pausedReason: not_annual` and resumes if they go annual.
+An unknown plan is not treated as annual. The live `/check` returns no
+plan, so a subscriber too new for db-community's local data is asked to try
+again later until db-community adds `plan` to `/check`.
+
 **How careers uses it** (`lib/membership.ts`):
 - The cron makes one batch call per run for every saved-search owner (both
   addresses), pauses or unpauses from `entitled`, and records the answer on

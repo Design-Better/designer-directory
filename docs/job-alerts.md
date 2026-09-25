@@ -105,6 +105,16 @@ subscribers can also save up to five searches with explicit criteria.
 | Management | saved searches listed on `/alerts?token=` with pause/resume/delete |
 | Board button | "Email me these jobs" on `/jobs` once a filter is active |
 
+**Annual-only (Aarron, 2026-09-25).** New saved searches need an annual,
+comp or gift plan, the same line db-community draws for Slack and Design
+Club. Searches created before end of day 2026-09-25 US Eastern
+(`ANNUAL_ONLY_FROM`) keep sending on any paid plan and stay manageable
+(pause, resume, delete). A post-launch search whose owner drops to monthly
+pauses with `pausedReason: not_annual` and resumes if they go annual.
+An unknown plan is not treated as annual. The live `/check` returns no
+plan, so a subscriber too new for db-community's local data is asked to try
+again later until db-community adds `plan` to `/check`.
+
 Rules carried over: three-match floor, one role per employer, dedupe per
 designer across all searches (`JobAlertLog`), one email per designer per
 run, stop link pauses everything. A lapsed member's searches pause with
