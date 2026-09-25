@@ -50,7 +50,11 @@ function H1({ children }: { children: React.ReactNode }) {
 export default async function NewAlertPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const raw = await searchParams;
   const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(raw)) if (typeof v === "string") sp.set(k, v);
+  // role=A,B and role=A&role=B are both accepted, matching /api/v1/jobs.
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === "string") sp.set(k, v);
+    else if (Array.isArray(v)) sp.set(k, v.join(","));
+  }
   const token = sp.get("token") ?? "";
   const criteria = parseCriteria(sp);
   const qs = criteriaToQuery(criteria);
@@ -163,6 +167,11 @@ export default async function NewAlertPage({ searchParams }: { searchParams: Pro
       <p className="text-[16px] leading-relaxed mt-5 mb-8" style={{ color: "var(--text-2)" }}>
         Adjust anything, pick how often, and we&apos;ll email new roles that match. Hi {designer.firstName === "there" ? "there" : designer.firstName}, you&apos;re signed in as {designer.email}.
       </p>
+      {sp.get("error") === "empty" && (
+        <p className="text-[16px] mb-6" role="alert" style={{ color: "var(--book-fg)" }}>
+          Choose at least one filter, such as a role, a company, or a location, so we know what to send.
+        </p>
+      )}
       <NewAlertForm token={token} criteria={criteria} defaultName={label} existingCount={designer._count.jobAlerts} max={MAX_SAVED_SEARCHES} />
     </Shell>
   );
