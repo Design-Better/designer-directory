@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import Stripe from "stripe";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
       to: process.env.ADMIN_EMAIL!,
       subject: `New job posted: ${job.title} at ${job.company}`,
       html: `
+        ${EMAIL_LOGO}
         <h2>New job posting received</h2>
         <p><strong>Role:</strong> ${job.title}</p>
         <p><strong>Company:</strong> ${job.company}</p>
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
       to: job.posterEmail,
       subject: `Your job listing is live — ${job.title} at ${job.company}`,
       html: `
+        ${EMAIL_LOGO}
         <h2>Your job is live on Design Better Careers!</h2>
         <p>Hi ${job.posterFirstName},</p>
         <p>Your listing for <strong>${job.title}</strong> at <strong>${job.company}</strong> is now live.</p>

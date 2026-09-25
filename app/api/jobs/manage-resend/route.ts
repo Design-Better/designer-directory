@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { z } from "zod";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const schema = z.object({
   email: z.string().email(),
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
         to: email,
         subject: "Your Design Better Careers job listings",
         html: `
+          ${EMAIL_LOGO}
           <p>Hi there,</p>
           <p>Here are all the job listings associated with <strong>${email}</strong>. Click a link to manage any listing — you can mark it as filled or preview it.</p>
           <table style="border-collapse:collapse;width:100%;max-width:480px">

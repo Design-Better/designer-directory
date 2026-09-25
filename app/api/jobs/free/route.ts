@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { JOB_POSTING_PRICE_DOLLARS } from "@/lib/stripe";
 import { z } from "zod";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const schema = z.object({
   posterFirstName: z.string().min(1),
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
       to: data.posterEmail,
       subject: `Your job posting is live — ${data.title} at ${data.company}`,
       html: `
+        ${EMAIL_LOGO}
         <p>Hi ${data.posterFirstName},</p>
         <p>Your job posting is live on Design Better Careers!</p>
         <p><strong>${data.title}</strong> at ${data.company}</p>

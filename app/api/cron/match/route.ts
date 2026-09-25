@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { rankDesigners, type DesignerForMatching } from "@/lib/matching";
 import { excludeOwnerPosters } from "@/lib/owner-emails";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 export async function GET(req: NextRequest) {
   if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -118,6 +119,7 @@ export async function GET(req: NextRequest) {
 
     const emailHtml = `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;color:#111;">
+        ${EMAIL_LOGO}
         <h2 style="font-size:20px;font-weight:700;margin-bottom:4px;">Your matched designers</h2>
         <p style="color:#6b7280;margin-bottom:4px;font-size:14px;">${job.title} at ${job.company}</p>
         <p style="color:#6b7280;margin-bottom:24px;font-size:14px;">We found <strong style="color:#111;">${topMatches.length} designer${topMatches.length !== 1 ? "s" : ""}</strong> who match your role. Here are your top picks:</p>

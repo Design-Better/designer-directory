@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers";
 
@@ -56,6 +57,7 @@ export async function GET(req: NextRequest) {
         to: designer.email,
         subject: "Your Design Better Careers profile has been paused",
         html: `
+          ${EMAIL_LOGO}
           <p>Hi ${designer.firstName},</p>
           <p>We sent you a check-in email 7 days ago and didn't hear back, so we've temporarily hidden your profile from the directory to keep things accurate for employers.</p>
           <p>Still looking? One click to get back in:</p>
@@ -93,6 +95,7 @@ export async function GET(req: NextRequest) {
       to: designer.email,
       subject: "Are you still open to opportunities?",
       html: `
+        ${EMAIL_LOGO}
         <p>Hi ${designer.firstName},</p>
         <p>Your profile on Design Better Careers is listed as open to work. We just want to make sure it's still accurate — are you still looking?</p>
         <p>

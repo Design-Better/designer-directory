@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { cookies } from "next/headers";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
         to: designer.email,
         subject: "Your Design Better talent profile — still looking?",
         html: `
+          ${EMAIL_LOGO}
           <p>Hi ${designer.firstName},</p>
 
           <p>Remember when Design Better launched its talent directory last year — a place for designers to post a profile and for companies to find and hire great design talent? We're back, and we've rebuilt it from the ground up.</p>

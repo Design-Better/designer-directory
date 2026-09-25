@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 // Sending to ~350 designers sequentially needs more than the default timeout
 export const maxDuration = 300;
@@ -134,8 +135,7 @@ export async function POST(req: NextRequest) {
           <!-- Logo header -->
           <tr>
             <td style="padding: 32px 40px 24px; border-bottom: 1px solid #EBEBEB;">
-              <img src="${appUrl}/og-image.png" alt="Design Better Careers" width="200"
-                style="display: block;" />
+              ${EMAIL_LOGO.replace("margin:0 0 24px;", "margin:0;")}
             </td>
           </tr>
 

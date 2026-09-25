@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 // Simple in-memory rate limiter: max 3 requests per IP per 15 minutes.
 // Works per serverless instance — good enough to stop scripted abuse.
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
     to: email,
     subject: "Edit your Design Better Careers profile",
     html: `
+      ${EMAIL_LOGO}
       <h2>Edit your profile</h2>
       <p>Hi ${designer.firstName},</p>
       <p>Click the link below to edit your Design Better Careers profile:</p>

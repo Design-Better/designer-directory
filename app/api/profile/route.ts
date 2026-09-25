@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { z } from "zod";
 import { getCorpusStats, formatSubscribers } from "@/lib/corpus";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers";
 
@@ -101,6 +102,7 @@ export async function PUT(req: NextRequest) {
         to: designer.email,
         subject: "Did Design Better Careers help you land your next role? 🎉",
         html: `
+          ${EMAIL_LOGO}
           <p>Hi ${designer.firstName},</p>
           <p>Congratulations on what sounds like an exciting new chapter!</p>
           <p>We noticed you updated your status to "Not looking" — if you connected with an employer through Design Better Careers, we'd love to hear about it.</p>

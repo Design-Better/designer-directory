@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { excludeOwnerPosters } from "@/lib/owner-emails";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://designbetter.careers";
 
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
       to: job.posterEmail,
       subject: `Did you fill the ${job.title} role?`,
       html: `
+        ${EMAIL_LOGO}
         <p>Hi ${job.posterFirstName},</p>
         <p>Your <strong>${job.title}</strong> listing at ${job.company} on Design Better Careers wrapped up a few weeks ago.</p>
         <p>Did you find your person? 🎉</p>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { z } from "zod";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const schema = z.object({
   firstName: z.string().min(1),
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
       to: designer.email,
       subject: "Your Design Better Careers profile is live!",
       html: `
+        ${EMAIL_LOGO}
         <h2>You're in the directory!</h2>
         <p>Hi ${designer.firstName},</p>
         <p>Your profile is live on Design Better Careers. Employers can now find you in the talent directory.</p>

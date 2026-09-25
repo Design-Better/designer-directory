@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
 
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest) {
       to: designer.email,
       subject: "Still looking? Your Design Better Careers profile",
       html: `
+        ${EMAIL_LOGO}
         <p>Hi ${designer.firstName},</p>
         <p>Just checking in — are you still open to new opportunities?</p>
         <p>Your profile is listed on <a href="${appUrl}" style="color:#E8441C;">Design Better Careers</a>, where companies and recruiters search for senior design talent.</p>

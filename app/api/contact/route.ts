@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import { z } from "zod";
+import { EMAIL_LOGO } from "@/lib/email-logo";
 
 function escapeHtml(str: string): string {
   return str
@@ -70,6 +71,7 @@ export async function POST(req: NextRequest) {
       ...(adminEmail ? { bcc: adminEmail } : {}),
       subject: `${data.name} from ${data.company} wants to connect — Design Better Careers`,
       html: `
+        ${EMAIL_LOGO}
         <p>Hi ${designer.firstName},</p>
         <p><strong>${data.name}</strong> from <strong>${data.company}</strong> saw your profile on Design Better Careers and wants to connect.</p>
         <blockquote style="border-left: 3px solid #E0E0E0; margin: 16px 0; padding: 12px 16px; color: #404040;">

@@ -1,3 +1,4 @@
+import { EMAIL_LOGO } from "@/lib/email-logo";
 import { db } from "@/lib/db";
 import { getResend, getFrom } from "@/lib/resend";
 import {
@@ -169,6 +170,7 @@ function shell(body: string): string {
   return `
   <div style="background:${PAPER};padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};">
     <div style="max-width:560px;margin:0 auto;background:#FFFFFF;padding:32px;border-radius:8px;">
+      ${EMAIL_LOGO}
       ${body}
     </div>
     <p style="max-width:560px;margin:16px auto 0;color:${MUTED};font-size:12px;line-height:1.5;">Design Better Careers · designbetter.careers</p>
@@ -214,7 +216,6 @@ export function inviteEmail(d: AlertDesigner, samples: AlertMatch[], totalOnBoar
     ? `<table role="presentation" style="width:100%;border-collapse:collapse;">${samples.map((m) => roleRow(m, base, d.id, "job_alert_invite")).join("")}</table>`
     : `<p style="font-size:16px;line-height:1.5;margin:0;">Nothing on the board matched your profile this week; the board carries ${totalOnBoard} open design roles and refreshes daily.</p>`;
   const html = shell(`
-    <a href="${base}" style="display:inline-block;margin-bottom:24px;"><img src="${base}/DesignBetterCareers.png" width="160" alt="Design Better Careers" style="display:block;height:auto;border:0;"></a>
     <h1 style="font-size:26px;line-height:1.15;margin:0 0 20px;">We found a few job openings you might be interested in<span style="color:${ORANGE};">.</span></h1>
     ${rolesBlock}
     <p style="margin:16px 0 0;"><a href="${base}/jobs?utm_source=job_alert_invite&utm_medium=email&d=${d.id}" style="color:${INK};font-weight:600;font-size:15px;text-decoration:none;">View all ${totalOnBoard} job openings &rarr;</a></p>
@@ -536,6 +537,7 @@ export function signInEmail(firstName: string, label: string, link: string): { s
     subject: "Your sign-in link for job alerts",
     html: `
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0A0A0A;">
+        ${EMAIL_LOGO}
         <p style="font-size:16px;line-height:1.5;">Hi ${esc(name)}, click below to set up your alert${label ? ` for <strong>${esc(label)}</strong>` : ""}.</p>
         <p><a href="${link}" style="display:inline-block;background:#0A0A0A;color:#F5F2EC;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:600;">Set up my alert</a></p>
         <p style="color:#6B6862;font-size:13px;line-height:1.5;">If you didn't ask for this, ignore it; nothing is created until the link is clicked. The link is personal to this address.</p>
