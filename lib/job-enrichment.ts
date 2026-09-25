@@ -1590,8 +1590,12 @@ export async function pruneExpiredJobs(): Promise<{
       }
       if (!res.ok) return; // 403/429/5xx: bot check or transient, not evidence
 
-      const html = (await res.text()).slice(0, 300_000).toLowerCase();
-      if (CLOSED_PHRASES.some((p) => html.includes(p))) {
+      // Visible text only. Script-rendered pages (Dayforce, other SPA portals)
+      // ship their whole interface-string bundle in the HTML, "this job posting
+      // is no longer available" included, so scanning raw HTML closed open
+      // roles: Aetonix was retired the morning after it was added.
+      const text = (htmlToText((await res.text()).slice(0, 2_000_000)) ?? "").toLowerCase();
+      if (CLOSED_PHRASES.some((p) => text.includes(p))) {
         await retire();
         byCopy++;
       }

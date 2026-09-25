@@ -54,6 +54,9 @@ export function parseSalary(comp: string | null | undefined):
     .filter((n) => Number.isFinite(n) && n > 0);
   if (!nums.length) return null;
 
+  // Pay per quarter, term, course or project has no schema.org unit that
+  // is honest (a quarterly stipend is not an annual salary), so omit it.
+  if (/quarter|semester|per term|per course|per project|stipend|per week|weekly|per day|daily/i.test(comp)) return null;
   const unitText: "HOUR" | "MONTH" | "YEAR" = /hour|\/hr\b|hourly/i.test(comp)
     ? "HOUR"
     : /month/i.test(comp)
