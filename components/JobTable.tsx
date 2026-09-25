@@ -58,7 +58,7 @@ export function JobTable({ rows, showCompanyCount = true, sticky = true }: {
       >
         <tr style={{ color: "var(--text-2)" }}>
           <th className={TH}>Role</th>
-          <th className={TH}>Company</th>
+          <th className={`${TH} hidden sm:table-cell`}>Company</th>
           {showCompanyCount && <th className={`${TH} hidden sm:table-cell text-right`}>Open roles</th>}
           <th className={`${TH} hidden lg:table-cell`}>Category</th>
           <th className={`${TH} hidden md:table-cell`}>Location</th>

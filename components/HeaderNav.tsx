@@ -1,61 +1,60 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { JOB_POSTING_PRICE_DOLLARS } from "@/lib/stripe";
 
+/** Header styled to match designbetter.com; classes live in app/globals.css (db-header*). */
 export function HeaderNav() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() ?? "/";
+
+  const links = [
+    { href: "/", label: "Jobs", current: pathname === "/" || pathname.startsWith("/jobs") },
+    { href: "/talent", label: "Designers", current: pathname.startsWith("/talent") },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-brand-gray-200">
-      <div className="flex items-center justify-between px-6 py-5 md:px-12">
-        <Link href="/" className="hover:opacity-80 transition-opacity py-1">
-          <Image src="/DesignBetterCareers.png" alt="Design Better Careers" width={160} height={57} style={{ width: 160, height: "auto" }} />
+    <header className="db-header">
+      <div className="db-header-row">
+        <Link href="/" className="db-logo" aria-label="Design Better Careers home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/DesignBetterWhite.svg" alt="Design Better" width={78} height={42} />
         </Link>
 
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/talent" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 transition-colors hover:text-black">
-            Designers
-          </Link>
-          <Link href="/jobs" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 transition-colors hover:text-black">
-            Jobs
-          </Link>
-          <Link href="/join" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 transition-colors hover:text-black">
-            Create profile
-          </Link>
-          <Link href="/post-a-job" className="rounded bg-brand-red px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90">
-            Post a Job — ${JOB_POSTING_PRICE_DOLLARS}
-          </Link>
-        </div>
+        <nav className="db-nav" aria-label="Sections">
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} aria-current={l.current ? "page" : undefined}>
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
+        <Link href="/post-a-job" className="db-cta">
+          Post a Job — ${JOB_POSTING_PRICE_DOLLARS}
+        </Link>
 
         <button
-          className="md:hidden text-brand-black p-1"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
+          type="button"
+          className="db-menu-btn"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="db-menu"
         >
-          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {open ? <X className="w-5 h-5" aria-hidden /> : <Menu className="w-5 h-5" aria-hidden />}
+          <span className="sr-only">Menu</span>
         </button>
       </div>
 
-      {open && (
-        <div className="md:hidden bg-white border-t border-brand-gray-200 px-6 py-4 flex flex-col gap-4">
-          <Link href="/talent" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 py-1" onClick={() => setOpen(false)}>
-            Designers
+      <nav id="db-menu" className="db-menu" aria-label="All sections" hidden={!open}>
+        {links.map((l) => (
+          <Link key={l.href} href={l.href} aria-current={l.current ? "page" : undefined} onClick={() => setOpen(false)}>
+            {l.label}
           </Link>
-          <Link href="/jobs" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 py-1" onClick={() => setOpen(false)}>
-            Jobs
-          </Link>
-          <Link href="/join" className="text-xs font-bold uppercase tracking-widest text-brand-gray-500 py-1" onClick={() => setOpen(false)}>
-            Create profile
-          </Link>
-          <Link href="/post-a-job" className="rounded bg-brand-red px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white text-center transition-opacity hover:opacity-90" onClick={() => setOpen(false)}>
-            Post a Job — ${JOB_POSTING_PRICE_DOLLARS}
-          </Link>
-        </div>
-      )}
+        ))}
+      </nav>
     </header>
   );
 }

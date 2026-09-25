@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Design talent directory",
+  title: "Designers open to work",
   description: "Senior product, UX, brand and design-systems designers open to their next role. Browse the Design Better talent directory or post a job to get matched candidates.",
   alternates: { canonical: "/talent" },
 };
@@ -111,18 +111,24 @@ export default async function TalentPage({
       <div className="max-w-6xl mx-auto px-6 pt-16 pb-24">
 
         {/* Hero */}
-        <div className="flex items-end justify-between mb-10 pb-10" style={{ borderBottom: "1px solid var(--divider)" }}>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between mb-10 pb-10" style={{ borderBottom: "1px solid var(--divider)" }}>
           <div>
             <h1 className="font-display text-display-lg md:text-display-xl font-bold leading-none" style={{ color: "var(--text-1)" }}>
-              Design talent directory<span style={{ color: "#FF4725" }}>.</span>
+              Designers open to work<span style={{ color: "#FF4725" }}>.</span>
             </h1>
-            <p className="font-mono text-[11px] font-normal uppercase tracking-[0.12em] mt-3" style={{ color: "var(--text-3)" }}>
-              Designers · Open to work
-            </p>
           </div>
-          <div className="text-right flex-shrink-0 ml-8">
-            <p className="font-display font-bold text-display-md leading-none" style={{ color: "#FF4725" }}>{total}</p>
-            <p className="font-mono text-[11px] font-normal uppercase tracking-[0.12em] mt-1" style={{ color: "var(--text-3)" }}>In directory</p>
+          <div className="flex items-center gap-6">
+            <div className="sm:text-right flex-shrink-0 sm:ml-8">
+              <p className="font-display font-bold text-display-md leading-none" style={{ color: "#FF4725" }}>{total}</p>
+              <p className="font-mono text-[11px] font-normal uppercase tracking-[0.12em] mt-1" style={{ color: "var(--text-3)" }}>In directory</p>
+            </div>
+            <Link
+              href="/join"
+              className="inline-flex items-center gap-2 font-mono text-[11px] font-normal uppercase tracking-[0.12em] px-5 py-3 rounded-md transition-colors duration-[120ms] whitespace-nowrap"
+              style={{ background: "#0A0A0A", color: "#F5F2EC" }}
+            >
+              Create profile →
+            </Link>
           </div>
         </div>
 
@@ -133,7 +139,7 @@ export default async function TalentPage({
             style={{ border: "1px solid var(--input-border)", background: "var(--surface-1)" }}
           >
             <span
-              className="flex items-center px-4 font-mono text-[11px] font-normal uppercase tracking-[0.12em] flex-shrink-0"
+              className="hidden sm:flex items-center px-4 font-mono text-[11px] font-normal uppercase tracking-[0.12em] flex-shrink-0"
               style={{ color: "var(--text-3)", borderRight: "1px solid var(--divider)", background: "var(--surface-alt)" }}
             >
               Search
@@ -143,7 +149,7 @@ export default async function TalentPage({
               name="q"
               defaultValue={params.q || ""}
               placeholder="Name, title, or company..."
-              className="flex-1 h-12 px-4 text-sm bg-transparent focus:outline-none"
+              className="flex-1 min-w-0 h-12 px-4 text-sm bg-transparent focus:outline-none"
               style={{ color: "var(--text-1)" }}
             />
             {params.role && <input type="hidden" name="role" value={params.role} />}

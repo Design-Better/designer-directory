@@ -36,7 +36,7 @@ export function ResultsBar({ showing, total, sortOptions, defaultView = "grid", 
 
   return (
     <div
-      className="flex items-center justify-between py-3 mb-6"
+      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3 mb-6"
       style={{ borderTop: "1px solid var(--divider)", borderBottom: "1px solid var(--divider)" }}
     >
       <p className="font-mono text-[11px] font-normal uppercase tracking-[0.12em]" style={{ color: "var(--text-3)" }}>
