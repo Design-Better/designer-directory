@@ -11,8 +11,9 @@ import { db } from "@/lib/db";
  *        Local data only, results in the order sent. Used by the cron and for
  *        a first look on the page.
  *   GET  {MEMBERS_API_URL}/api/members/check?email=
- *        → { entitled, status, plan }. Falls back to Stripe, so it sees a
- *        subscriber who joined minutes ago. Used at the moment of unlock.
+ *        → { entitled, status, plan }. Falls back to Stripe (annual or monthly
+ *        only), so it sees a subscriber who joined minutes ago. Comps and gifts
+ *        are local-only: a comp not yet imported answers entitled:false. Used at the moment of unlock.
  * Rate limit on db-community's side: 30 requests a minute.
  *
  * Failure policy is fail-open: when db-community can't be reached, the status
@@ -179,8 +180,8 @@ export function recordFor(d: MemberFields, ents: Map<string, Entitlement> | null
  * couldn't be reached at all. Records what it learns on the designer.
  *
  * `planKnown: false` means entitled by the live check but not yet in
- * db-community's local data, whose plan we can't see (the live check doesn't
- * return one). Not waved through as annual.
+ * db-community's local data with no plan on the answer. Rare since /check
+ * returns plan (2026-09-25). Not waved through as annual.
  */
 export async function resolveMember(d: MemberFields & { id: string }): Promise<Tier & { planKnown: boolean; live: boolean }> {
   const now = new Date();

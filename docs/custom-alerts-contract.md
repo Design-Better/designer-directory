@@ -81,9 +81,12 @@ Club. Searches created before end of day 2026-09-25 US Eastern
 (`ANNUAL_ONLY_FROM`) keep sending on any paid plan and stay manageable
 (pause, resume, delete). A post-launch search whose owner drops to monthly
 pauses with `pausedReason: not_annual` and resumes if they go annual.
-An unknown plan is not treated as annual. The live `/check` returns no
-plan, so a subscriber too new for db-community's local data is asked to try
-again later until db-community adds `plan` to `/check`.
+An unknown plan is not treated as annual. Since 2026-09-25 `/check` returns
+`plan`, including on its Stripe fallback, so a brand-new annual subscriber
+unlocks immediately. Stripe only yields annual or monthly. Comps and gifts
+exist only in db-community's local data (imported in batches from Substack),
+so a comp not imported yet gets `entitled: false`, and retrying won't help.
+For that case, use admin `mode: "grant"` or ask db-community to import.
 
 **How careers uses it** (`lib/membership.ts`):
 - The cron makes one batch call per run for every saved-search owner (both
