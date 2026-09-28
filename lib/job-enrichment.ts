@@ -1000,6 +1000,21 @@ export const SOURCES: Source[] = [
   { ats: "greenhouse", slug: "gleanwork",      name: "Glean",         domain: "glean.com",       url: "https://glean.com" },
   { ats: "greenhouse", slug: "current",        name: "Current",       domain: "current.com",     url: "https://current.com" },
   { ats: "greenhouse", slug: "step",           name: "Step",          domain: "step.com",        url: "https://step.com" },
+  // Added 2026-09-28 after probing new design-forward candidates for live
+  // design roles (scripts/probe-job-boards.mjs), cross-checked against the
+  // full isDesignRole()/isLeadershipRole() above rather than the script's
+  // reduced copy.
+  { ats: "greenhouse", slug: "heygen",         name: "HeyGen",        domain: "heygen.com",       url: "https://heygen.com" },
+  { ats: "greenhouse", slug: "planetscale",    name: "PlanetScale",   domain: "planetscale.com",  url: "https://planetscale.com" },
+  { ats: "greenhouse", slug: "cultureamp",     name: "Culture Amp",   domain: "cultureamp.com",   url: "https://cultureamp.com" },
+  { ats: "greenhouse", slug: "xai",            name: "xAI",           domain: "x.ai",             url: "https://x.ai" },
+  { ats: "greenhouse", slug: "udio",           name: "Udio",          domain: "udio.com",         url: "https://udio.com" },
+  { ats: "greenhouse", slug: "ondofinance",    name: "Ondo Finance",  domain: "ondo.finance",     url: "https://ondo.finance" },
+  { ats: "greenhouse", slug: "earnin",         name: "EarnIn",        domain: "earnin.com",       url: "https://earnin.com" },
+  { ats: "greenhouse", slug: "consensys",      name: "Consensys",     domain: "consensys.io",     url: "https://consensys.io" },
+  { ats: "greenhouse", slug: "apolloio",       name: "Apollo.io",     domain: "apollo.io",        url: "https://apollo.io" },
+  { ats: "greenhouse", slug: "gongio",         name: "Gong",          domain: "gong.io",          url: "https://gong.io" },
+  { ats: "greenhouse", slug: "assemblyai",     name: "AssemblyAI",    domain: "assemblyai.com",   url: "https://assemblyai.com" },
   { ats: "lever", slug: "netflix",       name: "Netflix",      domain: "netflix.com",      url: "https://netflix.com" },
   { ats: "lever", slug: "squareup",      name: "Square",       domain: "squareup.com",     url: "https://squareup.com" },
   { ats: "lever", slug: "shopify",       name: "Shopify",      domain: "shopify.com",      url: "https://shopify.com" },
@@ -1027,6 +1042,9 @@ export const SOURCES: Source[] = [
   { ats: "lever", slug: "gohighlevel",   name: "HighLevel",    domain: "gohighlevel.com",  url: "https://gohighlevel.com" },
   { ats: "lever", slug: "coins",         name: "Coins.ph",     domain: "coins.ph",         url: "https://coins.ph" },
   { ats: "lever", slug: "luxurypresence", name: "Luxury Presence", domain: "luxurypresence.com", url: "https://luxurypresence.com" },
+  // Added 2026-09-28 — see comment above the Greenhouse additions in this same wave.
+  { ats: "lever", slug: "metabase",      name: "Metabase",     domain: "metabase.com",     url: "https://metabase.com" },
+  { ats: "lever", slug: "finch",         name: "Finch",        domain: "tryfinch.com",     url: "https://tryfinch.com" },
   { ats: "ashby", slug: "lumaai",        name: "Luma AI",      domain: "lumalabs.ai",      url: "https://lumalabs.ai" },
   { ats: "ashby", slug: "arc-browser",   name: "Arc Browser",  domain: "arc.net",          url: "https://arc.net" },
   { ats: "ashby", slug: "elevenlabs",    name: "ElevenLabs",   domain: "elevenlabs.io",    url: "https://elevenlabs.io" },
@@ -1077,6 +1095,22 @@ export const SOURCES: Source[] = [
   { ats: "ashby", slug: "watershed",     name: "Watershed",    domain: "watershed.com",    url: "https://watershed.com" },
   { ats: "ashby", slug: "highbeam",      name: "Highbeam",     domain: "highbeam.com",     url: "https://highbeam.com" },
   { ats: "ashby", slug: "speak",         name: "Speak",        domain: "speak.com",        url: "https://speak.com" },
+  // Added 2026-09-28 — see comment above the Greenhouse additions in this same wave.
+  { ats: "ashby", slug: "synthesia",     name: "Synthesia",    domain: "synthesia.io",     url: "https://synthesia.io" },
+  { ats: "ashby", slug: "circle",        name: "Circle",       domain: "circle.com",       url: "https://circle.com" },
+  { ats: "ashby", slug: "opensea",       name: "OpenSea",      domain: "opensea.io",       url: "https://opensea.io" },
+  { ats: "ashby", slug: "warp",          name: "Warp",         domain: "warp.dev",         url: "https://warp.dev" },
+  { ats: "ashby", slug: "suno",          name: "Suno",         domain: "suno.com",         url: "https://suno.com" },
+  { ats: "ashby", slug: "magiceden",     name: "Magic Eden",   domain: "magiceden.io",     url: "https://magiceden.io" },
+  { ats: "ashby", slug: "recraft",       name: "Recraft",      domain: "recraft.ai",       url: "https://recraft.ai" },
+  { ats: "ashby", slug: "homebound",     name: "Homebound",    domain: "homebound.com",    url: "https://homebound.com" },
+  { ats: "ashby", slug: "phantom",       name: "Phantom",      domain: "phantom.com",      url: "https://phantom.com" },
+  { ats: "ashby", slug: "glide",         name: "Glide",        domain: "glideapps.com",    url: "https://glideapps.com" },
+  { ats: "ashby", slug: "kalshi",        name: "Kalshi",       domain: "kalshi.com",       url: "https://kalshi.com" },
+  { ats: "ashby", slug: "polymarket",    name: "Polymarket",   domain: "polymarket.com",   url: "https://polymarket.com" },
+  { ats: "ashby", slug: "granola",       name: "Granola",      domain: "granola.ai",       url: "https://granola.ai" },
+  { ats: "ashby", slug: "deepgram",      name: "Deepgram",     domain: "deepgram.com",     url: "https://deepgram.com" },
+  { ats: "ashby", slug: "finch",         name: "Finch Care",   domain: "finchcare.com",    url: "https://finchcare.com" },
 ];
 
 // ── Candidate shape ──────────────────────────────────────────────────────
